@@ -6,30 +6,24 @@ import 'package:url_launcher/url_launcher.dart';
 class DeviceAccessService {
   final ImagePicker _imagePicker = ImagePicker();
 
-  Future<XFile?> pickImageFromGallery() {
-    return _imagePicker.pickImage(source: ImageSource.gallery);
-  }
+  Future<XFile?> pickImageFromGallery() =>
+      _imagePicker.pickImage(source: ImageSource.gallery);
 
-  Future<XFile?> takePhoto() {
-    return _imagePicker.pickImage(source: ImageSource.camera);
-  }
+  Future<XFile?> takePhoto() =>
+      _imagePicker.pickImage(source: ImageSource.camera);
 
-  Future<FilePickerResult?> pickFiles() {
-    return FilePicker.platform.pickFiles(allowMultiple: true);
-  }
+  Future<FilePickerResult?> pickFiles() =>
+      FilePicker.platform.pickFiles(allowMultiple: true);
 
   Future<List<Contact>> pickContacts() async {
     final granted = await FlutterContacts.requestPermission(readonly: true);
-    if (!granted) {
-      throw Exception('Accès aux contacts refusé');
-    }
-
+    if (!granted) throw Exception('Accès aux contacts refusé');
     return FlutterContacts.getContacts(withProperties: true);
   }
 
   Future<void> callNumber(String number) async {
     final uri = Uri(scheme: 'tel', path: number);
-    if (!await launchUrl(uri)) {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw Exception('Impossible de lancer l’appel');
     }
   }

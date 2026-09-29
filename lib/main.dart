@@ -38,22 +38,21 @@ class _ChatHomePageState extends State<ChatHomePage> {
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
       sender: 'BIIC Bot',
-      text: 'Bienvenue sur BIIC CHAT. Dites bonjour à votre communauté.',
+      text: 'Bienvenue sur BIIC CHAT !',
       isMe: false,
     ),
   ];
 
-  void _sendMessage([String? content]) {
-    final text = (content ?? _messageController.text).trim();
+  void _sendMessage([String? value]) {
+    final text = (value ?? _messageController.text).trim();
     if (text.isEmpty) return;
-
     setState(() {
       _messages.add(_ChatMessage(sender: 'Vous', text: text, isMe: true));
       _messageController.clear();
     });
   }
 
-  Future<void> _showAttachmentMenu() async {
+  Future<void> _openAttachments() async {
     final action = await showModalBottomSheet<_AttachmentAction>(
       context: context,
       builder: (context) => SafeArea(
@@ -61,7 +60,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Galerie photo/vidéo'),
+              title: const Text('Choisir une image'),
               onTap: () => Navigator.pop(context, _AttachmentAction.gallery),
             ),
             ListTile(
@@ -71,45 +70,44 @@ class _ChatHomePageState extends State<ChatHomePage> {
             ),
             ListTile(
               leading: const Icon(Icons.attach_file),
-              title: const Text('Fichiers'),
+              title: const Text('Choisir un fichier'),
               onTap: () => Navigator.pop(context, _AttachmentAction.file),
             ),
             ListTile(
               leading: const Icon(Icons.contacts),
-              title: const Text('Répertoire / contacts'),
+              title: const Text('Partager un contact'),
               onTap: () => Navigator.pop(context, _AttachmentAction.contacts),
             ),
           ],
         ),
       ),
     );
-
     if (!mounted || action == null) return;
 
     try {
       switch (action) {
         case _AttachmentAction.gallery:
-          final image = await _deviceAccess.pickImageFromGallery();
-          if (image != null) _sendMessage('📷 Image sélectionnée : ${image.name}');
+          final file = await _deviceAccess.pickImageFromGallery();
+          if (file != null) _sendMessage('Image sélectionnée : ${file.name}');
         case _AttachmentAction.camera:
-          final photo = await _deviceAccess.takePhoto();
-          if (photo != null) _sendMessage('📷 Photo prise : ${photo.name}');
+          final file = await _deviceAccess.takePhoto();
+          if (file != null) _sendMessage('Photo prise : ${file.name}');
         case _AttachmentAction.file:
           final result = await _deviceAccess.pickFiles();
           if (result != null) {
             final names = result.files.map((file) => file.name).join(', ');
-            _sendMessage('📎 Fichier(s) sélectionné(s) : $names');
+            _sendMessage('Fichier(s) : $names');
           }
         case _AttachmentAction.contacts:
           final contacts = await _deviceAccess.pickContacts();
           if (contacts.isEmpty) {
-            _showInfo('Aucun contact trouvé');
+            _showMessage('Aucun contact trouvé');
           } else if (mounted) {
             await _showContacts(contacts);
           }
       }
     } catch (error) {
-      if (mounted) _showInfo(error.toString());
+      if (mounted) _showMessage(error.toString());
     }
   }
 
@@ -122,7 +120,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
           itemCount: contacts.length,
           itemBuilder: (context, index) {
             final contact = contacts[index];
-            final phone = contact.phones.isEmpty ? null : contact.phones.first.number;
+            final phone = contact.phones.isEmpty
+                ? null
+                : contact.phones.first.number;
             return ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
               title: Text(contact.displayName),
@@ -131,15 +131,14 @@ class _ChatHomePageState extends State<ChatHomePage> {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.phone),
-                      onPressed: () async {
-                        try {
-                          await _deviceAccess.callNumber(phone);
-                        } catch (error) {
-                          if (mounted) _showInfo(error.toString());
-                        }
-                      },
+                      onPressed: () => _deviceAccess.callNumber(phone),
                     ),
-              onTap: phone == null ? null : () => _sendMessage('👤 ${contact.displayName} : $phone'),
+              onTap: phone == null
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      _sendMessage('Contact : ${contact.displayName} - $phone');
+                    },
             );
           },
         ),
@@ -147,7 +146,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
     );
   }
 
-  void _showInfo(String message) {
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
@@ -168,18 +167,29 @@ class _ChatHomePageState extends State<ChatHomePage> {
               itemBuilder: (context, index) {
                 final message = _messages[index];
                 return Align(
-                  alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: message.isMe
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * .78,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color: message.isMe ? const Color(0xFF2563EB) : Colors.grey.shade200,
+                      color: message.isMe
+                          ? const Color(0xFF2563EB)
+                          : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
                       message.text,
-                      style: TextStyle(color: message.isMe ? Colors.white : Colors.black),
+                      style: TextStyle(
+                        color: message.isMe ? Colors.white : Colors.black,
+                      ),
                     ),
                   ),
                 );
@@ -188,26 +198,33 @@ class _ChatHomePageState extends State<ChatHomePage> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
               child: Row(
                 children: [
-                  IconButton(onPressed: _showAttachmentMenu, icon: const Icon(Icons.add_circle)),
+                  IconButton(
+                    onPressed: _openAttachments,
+                    icon: const Icon(Icons.add_circle),
+                    tooltip: 'Pièces jointes',
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _messageController,
                       decoration: InputDecoration(
                         hintText: 'Écrire un message...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(24)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
                       minLines: 1,
                       maxLines: 3,
+                      textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
                   const SizedBox(width: 8),
                   FloatingActionButton(
                     onPressed: _sendMessage,
-                    backgroundColor: const Color(0xFF1D4ED8),
+                    tooltip: 'Envoyer',
                     child: const Icon(Icons.send),
                   ),
                 ],
@@ -233,5 +250,9 @@ class _ChatMessage {
   final String text;
   final bool isMe;
 
-  const _ChatMessage({required this.sender, required this.text, required this.isMe});
+  const _ChatMessage({
+    required this.sender,
+    required this.text,
+    required this.isMe,
+  });
 }

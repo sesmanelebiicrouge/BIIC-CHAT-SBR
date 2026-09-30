@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -25,6 +26,11 @@ class ContactsService {
       : _client = client ?? Supabase.instance.client;
 
   Future<List<ImportedContact>> importDeviceContacts() async {
+    if (kIsWeb) {
+      throw UnsupportedError(
+        'L’import des contacts de l’appareil est disponible sur Android/iOS. Sur le Web, utilisez la recherche de membres.',
+      );
+    }
     final permission =
         await FlutterContacts.permissions.request(PermissionType.readWrite);
     if (permission != PermissionStatus.granted) {

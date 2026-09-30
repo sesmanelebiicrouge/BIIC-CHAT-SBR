@@ -133,6 +133,8 @@ jobs:
           test -s build/web/biic_logo.png
           test -s build/web/sitemap.xml
           test -s build/web/robots.txt
+          test -s build/web/manifest.json
+          grep -q 'biic_logo.png' build/web/manifest.json
           grep -q 'BIIC CHAT' build/web/index.html
 
       - name: Publish gh-pages branch

@@ -60,7 +60,7 @@ class ConversationService {
     );
   }
 
-  Stream<List<Map<String,dynamic>>> getUserConversations(String userId) {
+  Future<List<Map<String, dynamic>>> getConversationMembers(String conversationId) async {\n    final rows = await _supabase.from('conversation_members').select('user_id, users!inner(id, display_name, email, avatar_url, status)').eq('conversation_id', conversationId);\n    return List<Map<String, dynamic>>.from(rows);\n  }\n\n  Stream<List<Map<String,dynamic>>> getUserConversations(String userId) {
     if (userId.trim().isEmpty) return const Stream.empty();
     return _supabase.from('conversations').stream(primaryKey: ['id']).order('updated_at', ascending: false).map((rows) => List<Map<String,dynamic>>.from(rows));
   }

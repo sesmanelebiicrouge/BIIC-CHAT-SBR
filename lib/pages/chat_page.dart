@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/conversation_service.dart';
 import '../services/media_service.dart';
 
@@ -30,6 +31,22 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Envoi impossible : $e')));
     } finally { if (mounted) setState(() => _sending = false); }
+  }
+
+  Future<void> _startAudioCall() async {
+    final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
+    final uri = Uri.parse('https://meet.jit.si/$room');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de démarrer l’appel audio.')));
+    }
+  }
+
+  Future<void> _startVideoCall() async {
+    final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
+    final uri = Uri.parse('https://meet.jit.si/$room');
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de démarrer l’appel vidéo.')));
+    }
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -100,8 +117,8 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _upload(String name, List<int> bytes, String contentType) async {
     final user = _service.client.auth.currentUser;
     if (user == null || bytes.isEmpty) return;
-    if (bytes.length > 20 * 1024 * 1024) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fichier trop volumineux : 20 Mo maximum.')));
+    if (bytes.length > 50 * 1024 * 1024) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fichier trop volumineux : 50 Mo maximum.')));
       return;
     }
     setState(() => _uploading = true);
@@ -125,7 +142,15 @@ class _ChatPageState extends State<ChatPage> {
 
   @override Widget build(BuildContext context) {
     final userId = _service.client.auth.currentUser?.id;
-    return Scaffold(appBar: AppBar(title: Text(widget.title)), body: Column(children: [
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(tooltip: 'Appel audio', icon: const Icon(Icons.call_outlined), onPressed: _startAudioCall),
+          IconButton(tooltip: 'Appel vidéo', icon: const Icon(Icons.videocam_outlined), onPressed: _startVideoCall),
+        ],
+      ),
+      body: Column(children: [
       if (_uploading) const LinearProgressIndicator(minHeight: 2),
       Expanded(child: StreamBuilder<List<Map<String,dynamic>>>(
         stream: _service.watchMessages(widget.conversationId),

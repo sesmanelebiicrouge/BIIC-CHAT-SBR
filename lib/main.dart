@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'pages/auth_page.dart';
 import 'pages/home_page.dart';
-import 'pages/demo_home_page.dart';
 import 'services/auth_service.dart';
 import 'services/backend_service.dart';
 import 'services/device_access_service.dart';
@@ -58,7 +57,7 @@ class _BIICSplashGateState extends State<BIICSplashGate> {
         MaterialPageRoute<void>(
           builder: (_) => AppConfig.hasSupabaseConfig
               ? const AuthGate()
-              : const DemoHomePage(),
+              : const ProductionConfigErrorPage(),
         ),
       );
     });
@@ -92,6 +91,39 @@ class _BIICSplashGateState extends State<BIICSplashGate> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class ProductionConfigErrorPage extends StatelessWidget {
+  const ProductionConfigErrorPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off_rounded, size: 64, color: Color(0xFFD71920)),
+              const SizedBox(height: 16),
+              const Text(
+                'BIIC CHAT est temporairement indisponible',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'La configuration du serveur de production n’est pas disponible. '
+                'Aucune donnée de démonstration ne sera affichée à la place du service réel.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );

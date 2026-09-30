@@ -17,6 +17,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _factorId;
   String? _qrCode;
   String? _secret;
+  String? _pendingPhone;
 
   void _message(String text)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(text)));
 
@@ -37,6 +38,19 @@ class _SettingsPageState extends State<SettingsPage> {
     try{await _auth.changePhone(phone);_message('Un code SMS a été envoyé à '+phone+'. Validez-le pour confirmer le changement.');}
     catch(e){_message('Impossible de changer le numéro : $e');}
     finally{if(mounted)setState(()=>_loading=false);}
+  }
+
+  Future<void> _confirmPhoneChange(String phone) async {
+    final controller=TextEditingController();
+    final value=await showDialog<String>(context:context,builder:(context)=>AlertDialog(
+      title:const Text('Valider le nouveau numéro'),
+      content:TextField(controller:controller,keyboardType:TextInputType.number,maxLength:6,textAlign:TextAlign.center,decoration:const InputDecoration(labelText:'Code SMS à 6 chiffres')),
+      actions:[TextButton(onPressed:()=>Navigator.pop(context),child:const Text('Plus tard')),FilledButton(onPressed:()=>Navigator.pop(context,controller.text),child:const Text('Valider'))],
+    ));
+    controller.dispose();
+    if(value==null||value.trim().isEmpty)return;
+    try{await _auth.verifyPhoneChange(phone:phone,token:value);_message('Numéro de téléphone mis à jour.');}
+    catch(e){_message('Code incorrect ou expiré : \$e');}
   }
 
   Future<void> _setup2FA() async {

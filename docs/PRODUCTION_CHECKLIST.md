@@ -4,7 +4,7 @@
 - Authentification Supabase : inscription, connexion, déconnexion et récupération du mot de passe.
 - Conversations privées et groupes.
 - Messages temps réel via Supabase Realtime.
-- Pièces jointes privées : images et fichiers jusqu'à 20 Mo côté client.
+- Pièces jointes privées : images et fichiers jusqu'à 50 Mo côté client.
 - Profils : nom, bio, statut et avatar privé.
 - Blocage et signalement d'utilisateurs.
 - RLS Supabase et vérification d'appartenance aux conversations.
@@ -13,7 +13,7 @@
 - Tests automatisés de la configuration publique Supabase.
 
 ## À configurer avant publication
-1. Appliquer les migrations Supabase dans l'ordre, jusqu'à 007_phone_accounts_and_deletion.sql.
+1. Appliquer toutes les migrations Supabase dans l'ordre, jusqu'à 012_atomic_direct_conversations.sql.
 2. Renseigner SUPABASE_URL et SUPABASE_PUBLISHABLE_KEY comme variables de build.
 3. Ne jamais mettre la clé service_role dans Flutter.
 4. Configurer les notifications push Android/iOS/Web avec Firebase/FCM et les credentials de production.
@@ -33,10 +33,10 @@
 - Les actions de blocage sont liées au compte connecté.
 - Les signalements sont enregistrés côté serveur.
 - Les messages exigent du texte ou une pièce jointe.
-- Les fichiers envoyés depuis l'application sont limités à 20 Mo.
+- Les fichiers envoyés depuis l'application sont limités à 50 Mo.
 
 ## À vérifier avant de déclarer la production prête
-- Exécuter la migration 007 dans le projet Supabase de production.
+- Exécuter toutes les migrations jusqu'à 012 dans le projet Supabase de production.
 - Vérifier que l'inscription avec deux numéros différents fonctionne et que le changement de numéro synchronise le profil.
 - Tester la suppression de compte sur un compte de test et confirmer la suppression des données associées.
 - Vérifier que les notifications push sont configurées avant de promettre des notifications en arrière-plan.

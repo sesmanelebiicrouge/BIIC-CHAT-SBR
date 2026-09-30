@@ -41,6 +41,10 @@ class AuthService {
     await _client.auth.updateUser(UserAttributes(phone: newPhone.trim()));
   }
 
+  Future<AuthResponse> verifyPhoneChange({required String phone, required String token}) {
+    return _client.auth.verifyOTP(type: OtpType.phoneChange, phone: phone.trim(), token: token.trim());
+  }
+
   Future<MFAEnrollResponse> enrollTotp({String? friendlyName}) {
     return _client.auth.mfa.enroll(
       factorType: FactorType.totp,

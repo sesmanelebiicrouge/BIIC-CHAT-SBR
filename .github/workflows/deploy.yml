@@ -48,13 +48,37 @@ jobs:
           logo_src = Path("assets/biic_logo.svg")
           logo_dst = Path("web/biic_logo.svg")
           logo_dst.write_text(logo_src.read_text())
+          sitemap = Path("web/sitemap.xml")
+          sitemap.write_text("""<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc></sitemap>
+  <sitemap><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc></sitemap>
+  <sitemap><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc></sitemap>
+</sitemapindex>
+""")
+          robots = Path("web/robots.txt")
+          robots.write_text("""User-agent: *
+Allow: /
+
+Sitemap: https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/sitemap.xml
+""")
           p = Path("web/index.html")
           s = p.read_text()
-          s = s.replace('<meta name="description" content="A new Flutter project.">', '<meta name="description" content="BIIC CHAT — messagerie instantanée.">')
+          s = s.replace('<meta name="description" content="A new Flutter project.">', '<meta name="description" content="BIIC CHAT — messagerie instantanée par numéro de téléphone, avec messages, médias, appels audio et vidéo.">')
+          s = s.replace('</head>', '''  <link rel="canonical" href="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
+  <meta property="og:title" content="BIIC CHAT">
+  <meta property="og:description" content="BIIC CHAT — messagerie instantanée.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
+  <meta property="og:image" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png">
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT","applicationCategory":"CommunicationApplication","operatingSystem":"Android, Web","description":"BIIC CHAT — application de messagerie instantanée.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png"}
+  </script>
+</head>''')
           s = s.replace('<meta name="apple-mobile-web-app-title" content="biic_chat_sbr">', '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">')
           s = s.replace('<title>biic_chat_sbr</title>', '<title>BIIC CHAT</title>')
-          if 'rel="icon" href="biic_logo.svg"' not in s:
-              s = s.replace('<link rel="manifest" href="manifest.json">', '<link rel="icon" type="image/svg+xml" href="biic_logo.svg">\n  <link rel="manifest" href="manifest.json">')
+          if 'rel="icon" href="biic_logo.png"' not in s:
+              s = s.replace('<link rel="manifest" href="manifest.json">', '<link rel="icon" type="image/png" sizes="512x512" href="biic_logo.png">\n  <link rel="manifest" href="manifest.json">')
           p.write_text(s)
           m = Path("web/manifest.json")
           data = json.loads(m.read_text())
@@ -64,10 +88,11 @@ jobs:
           data["theme_color"] = "#D71920"
           data["description"] = "BIIC CHAT — messagerie instantanée."
           data["icons"] = [
-              {"src": "biic_logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+              {"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
           ]
           m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
+          convert -background none assets/biic_logo.svg -resize 512x512 web/biic_logo.png
 
       - name: Build Web
         run: >

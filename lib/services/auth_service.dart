@@ -37,5 +37,26 @@ class AuthService {
     await _client.auth.updateUser(UserAttributes(password: password));
   }
 
+  Future<void> changePhone(String newPhone) async {
+    await _client.auth.updateUser(UserAttributes(phone: newPhone.trim()));
+  }
+
+  Future<MFAEnrollResponse> enrollTotp({String? friendlyName}) {
+    return _client.auth.mfa.enroll(
+      factorType: FactorType.totp,
+      friendlyName: friendlyName,
+      issuer: 'BIIC CHAT',
+    );
+  }
+
+  Future<AuthResponse> verifyTotp({required String factorId, required String code}) async {
+    final challenge = await _client.auth.mfa.challenge(factorId: factorId);
+    return _client.auth.mfa.verify(
+      factorId: factorId,
+      challengeId: challenge.id,
+      code: code.trim(),
+    );
+  }
+
   Future<void> signOut() => _client.auth.signOut();
 }

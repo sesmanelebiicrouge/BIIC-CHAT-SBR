@@ -4,12 +4,12 @@ BIIC CHAT contains private user content. Do not make chat or profile storage buc
 
 ## Database
 
-Run all migrations in order, through `supabase/migrations/007_phone_accounts_and_deletion.sql` using Supabase migrations or the SQL editor.
+Run all migrations in order, through `supabase/migrations/012_atomic_direct_conversations.sql` using Supabase migrations or the SQL editor.
 
 ## Storage
 
 Create two private buckets:
-- chat_media
+- chat-media
 - avatars
 
 Use authenticated Storage access or short-lived signed URLs. Never ship a Supabase service-role key in the Flutter application.
@@ -20,6 +20,7 @@ Enable Realtime/Postgres Changes for:
 - messages
 - conversations
 - conversation_members
+- message_reads
 
 ## Production security
 

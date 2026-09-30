@@ -49,7 +49,7 @@ class _SettingsPageState extends State<SettingsPage> {
     controller.dispose();
     if(value==null||value.trim().isEmpty)return;
     try{await _auth.verifyPhoneChange(phone:phone,token:value);_message('Numéro de téléphone mis à jour.');}
-    catch(e){_message('Code incorrect ou expiré : \$e');}
+    catch(e){_message('Code incorrect ou expiré : $e');}
   }
 
   Future<void> _deleteAccount() async {

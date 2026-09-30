@@ -153,7 +153,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
                 contact.phones.isEmpty ? null : contact.phones.first.number;
             return ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(contact.displayName),
+              title: Text(contact.displayName ?? 'Contact sans nom'),
               subtitle: Text(phone ?? 'Aucun numéro'),
               trailing: phone == null
                   ? null

@@ -37,10 +37,11 @@ class _ChatPageState extends State<ChatPage> {
     await _upload(file.name, await file.readAsBytes(), file.mimeType ?? 'image/jpeg');
   }
   Future<void> _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(withData: true);
-    if (result == null || result.files.single.bytes == null) return;
-    final file = result.files.single;
-    await _upload(file.name, file.bytes!, 'application/octet-stream');
+    final files = await FilePicker.pickFiles();
+    if (files.isEmpty) return;
+    final file = files.first;
+    final bytes = await file.readAsBytes();
+    await _upload(file.name, bytes, 'application/octet-stream');
   }
   Future<void> _upload(String name, List<int> bytes, String contentType) async {
     final user = _service.client.auth.currentUser;

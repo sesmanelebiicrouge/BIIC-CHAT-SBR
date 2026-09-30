@@ -17,7 +17,6 @@ class _SettingsPageState extends State<SettingsPage> {
   String? _factorId;
   String? _qrCode;
   String? _secret;
-  String? _pendingPhone;
 
   void _message(String text)=>ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(text)));
 

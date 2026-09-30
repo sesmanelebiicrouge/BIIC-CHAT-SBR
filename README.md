@@ -50,7 +50,7 @@ flutter run \
   --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-L'ancien nom `SUPABASE_ANON_KEY` reste accepté pour compatibilité.
+Le client utilise de préférence la clé publique Supabase `SUPABASE_PUBLISHABLE_KEY`. La clé `anon` legacy reste supportée par le code pour compatibilité, mais Supabase recommande désormais les clés publishable pour les applications distribuées.
 
 ## Migrations Supabase
 
@@ -87,5 +87,7 @@ Chaque modification poussée sur `main` déclenche la construction et la publica
 
 ## État
 
-La version Web doit être vérifiée après chaque déploiement sur :
+La publication Web de production est volontairement bloquée tant que les secrets GitHub `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY` ne sont pas configurés. Cela empêche qu’une version de démonstration soit publiée à la place du service réel.
+
+Après configuration du backend, chaque modification poussée sur `main` reconstruit et publie la version Web sur :
 https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/

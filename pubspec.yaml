@@ -1,10 +1,7 @@
 name: biic_chat_sbr
-
-description: BIIC CHAT SBR
-
+description: BIIC CHAT SBR - application de messagerie multiplateforme.
 publish_to: 'none'
-
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -13,6 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.3.0
+  file_picker: ^8.0.7
+  flutter_contacts: ^1.1.9+2
+  image_picker: ^1.1.2
+  url_launcher: ^6.3.2
+  supabase_flutter: ^2.14.2
 
 dev_dependencies:
   flutter_test:

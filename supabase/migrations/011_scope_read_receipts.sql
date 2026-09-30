@@ -48,3 +48,7 @@ drop trigger if exists message_reads_set_conversation on public.message_reads;
 create trigger message_reads_set_conversation
 before insert on public.message_reads
 for each row execute function public.set_message_read_conversation();
+
+
+-- Explicit Data API privileges for the authenticated client.
+grant select, insert on public.message_reads to authenticated;

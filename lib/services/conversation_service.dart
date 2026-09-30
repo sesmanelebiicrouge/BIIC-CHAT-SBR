@@ -126,6 +126,7 @@ class ConversationService {
 
   Future<void> markMessagesRead({
     required String userId,
+    required String conversationId,
     required List<String> messageIds,
   }) async {
     final uid = userId.trim();
@@ -159,6 +160,7 @@ class ConversationService {
     return _supabase
         .from('message_reads')
         .stream(primaryKey: ['message_id', 'user_id'])
+        .eq('conversation_id', conversationId.trim())
         .order('read_at', ascending: true)
         .map((rows) => List<Map<String, dynamic>>.from(rows));
   }

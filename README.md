@@ -62,6 +62,11 @@ Appliquer dans l'ordre :
 5. `005_profiles_reports_safety.sql`
 6. `006_privacy_hardening.sql`
 7. `007_phone_accounts_and_deletion.sql`
+8. `008_imported_contacts.sql`
+9. `009_message_read_receipts.sql`
+10. `010_chat_reliability.sql`
+11. `011_scope_read_receipts.sql`
+12. `012_atomic_direct_conversations.sql`
 
 Après migration, vérifier dans Supabase que Realtime est activé et que le bucket `chat-media` reste privé.
 

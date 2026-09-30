@@ -35,7 +35,57 @@ class BIICChatApp extends StatelessWidget {
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16)), borderSide: BorderSide(color: Color(0xFFE7E7E7))),
         ),
       ),
-      home: AppConfig.hasSupabaseConfig ? const AuthGate() : const DemoHomePage(),
+      home: const BIICSplashGate(),
+    );
+  }
+}
+
+class BIICSplashGate extends StatefulWidget {
+  const BIICSplashGate({super.key});
+
+  @override
+  State<BIICSplashGate> createState() => _BIICSplashGateState();
+}
+
+class _BIICSplashGateState extends State<BIICSplashGate> {
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 1400), () {
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => AppConfig.hasSupabaseConfig
+              ? const AuthGate()
+              : const DemoHomePage(),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFF0175C2),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            BiicBrand(iconSize: 112, showSubtitle: false),
+            SizedBox(height: 28),
+            Text(
+              'BIENVENUE SUR BIIC CHAT',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 25,
+                fontWeight: FontWeight.w800,
+                letterSpacing: .4,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

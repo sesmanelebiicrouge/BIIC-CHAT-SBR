@@ -8,6 +8,6 @@ void main() {
     await tester.pump();
 
     expect(find.text('BIIC CHAT'), findsOneWidget);
-    expect(find.text('BIENVENUE SUR BIIC CHAT'), findsOneWidget);
+    expect(find.text('BIENVENUE SUR BIIC CHAT'), findsNWidgets(2));
   });
 }

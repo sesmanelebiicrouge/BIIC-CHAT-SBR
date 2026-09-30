@@ -22,8 +22,22 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true
   assets:
     - assets/biic_logo.svg
+    - assets/biic_android12.png
+    - assets/biic_branding_800x320.png
+
+flutter_native_splash:
+  color: "#0175C2"
+  image: assets/biic_android12.png
+  branding: assets/biic_branding_800x320.png
+  branding_bottom_padding: 24
+  fullscreen: false
+  android_12:
+    color: "#0175C2"
+    image: assets/biic_android12.png
+    branding: assets/biic_branding_800x320.png

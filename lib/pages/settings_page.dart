@@ -53,6 +53,39 @@ class _SettingsPageState extends State<SettingsPage> {
     catch(e){_message('Code incorrect ou expiré : \$e');}
   }
 
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer le compte ?'),
+        content: const Text(
+          'Cette action supprime définitivement votre compte BIIC CHAT et les données liées. Elle ne peut pas être annulée.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer définitivement'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _loading = true);
+    try {
+      await _auth.deleteMyAccount();
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        _message('Votre compte a été supprimé.');
+      }
+    } catch (e) {
+      _message('Impossible de supprimer le compte : $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _setup2FA() async {
     setState(()=>_loading=true);
     try{

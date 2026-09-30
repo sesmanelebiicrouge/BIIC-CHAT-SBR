@@ -5,6 +5,7 @@ import '../widgets/biic_brand.dart';
 import 'members_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
+import 'settings_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -15,6 +16,7 @@ class HomePage extends StatelessWidget {
       appBar:AppBar(
         title:const BiicBrand(iconSize:36,showSubtitle:false),
         actions:[
+          IconButton(tooltip:'Paramètres',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const SettingsPage())),icon:const Icon(Icons.settings_outlined)),
           IconButton(tooltip:'Mon profil',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ProfilePage())),icon:const Icon(Icons.account_circle_outlined)),
           IconButton(tooltip:'Nouveau chat',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),icon:const Icon(Icons.person_add_alt_1)),
           IconButton(tooltip:'Déconnexion',onPressed:()=>AuthService().signOut(),icon:const Icon(Icons.logout)),

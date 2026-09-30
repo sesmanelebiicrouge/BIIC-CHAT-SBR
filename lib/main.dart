@@ -159,7 +159,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.phone),
-                      onPressed: () => _deviceAccess.callNumber(phone!),
+                      onPressed: () => _deviceAccess.callNumber(phone),
                     ),
               onTap: phone == null
                   ? null

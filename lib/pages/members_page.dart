@@ -346,14 +346,9 @@ class _MembersPageState extends State<MembersPage> {
                     final member = members[index];
                     final name = _memberLabel(member);
                     final status = member['status'] as String? ?? 'offline';
-                    final avatar = member['avatar_url'] as String?;
                     return ListTile(
                       leading: CircleAvatar(
-                        backgroundImage:
-                            avatar == null ? null : NetworkImage(avatar),
-                        child: avatar == null
-                            ? Text(name.substring(0, 1).toUpperCase())
-                            : null,
+                        child: Text(name.substring(0, 1).toUpperCase()),
                       ),
                       title: Text(name),
                       subtitle: Text('$status • Appuyer pour discuter'),

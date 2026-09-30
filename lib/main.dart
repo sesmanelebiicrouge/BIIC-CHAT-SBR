@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'config/app_config.dart';
+import 'pages/auth_page.dart';
+import 'pages/members_page.dart';
+import 'services/auth_service.dart';
+import 'services/backend_service.dart';
 import 'services/device_access_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeBackend();
   runApp(const BIICChatApp());
 }
 
@@ -20,7 +27,24 @@ class BIICChatApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1D4ED8)),
         useMaterial3: true,
       ),
-      home: const ChatHomePage(),
+      home: AppConfig.hasSupabaseConfig ? const AuthGate() : const ChatHomePage(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = AuthService();
+    return StreamBuilder<AuthState>(
+      stream: auth.authStateChanges,
+      builder: (context, snapshot) {
+        final session = snapshot.data?.session ?? auth.currentSession;
+        if (session == null) return const AuthPage();
+        return const ChatHomePage();
+      },
     );
   }
 }
@@ -163,6 +187,24 @@ class _ChatHomePageState extends State<ChatHomePage> {
         title: const Text('BIIC CHAT'),
         backgroundColor: const Color(0xFF1D4ED8),
         foregroundColor: Colors.white,
+        actions: [
+          if (AppConfig.hasSupabaseConfig)
+            IconButton(
+              tooltip: 'Membres',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const MembersPage()),
+                );
+              },
+            ),
+          if (AppConfig.hasSupabaseConfig)
+            IconButton(
+              tooltip: 'Déconnexion',
+              icon: const Icon(Icons.logout),
+              onPressed: () => AuthService().signOut(),
+            ),
+        ],
       ),
       body: Column(
         children: [

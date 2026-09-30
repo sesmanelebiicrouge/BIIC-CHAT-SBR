@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/sitemap.xml

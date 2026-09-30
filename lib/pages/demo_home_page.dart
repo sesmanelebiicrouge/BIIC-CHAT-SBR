@@ -82,8 +82,8 @@ class _DemoHomePageState extends State<DemoHomePage> {
         final x = await ImagePicker().pickImage(source: ImageSource.camera);
         if (x != null) _snack('Photo sélectionnée : ${x.name}');
       } else if (action == 'file') {
-        final result = await FilePicker.pickFiles();
-        if (result != null && result.files.isNotEmpty) _snack('Document sélectionné : ${result.files.first.name}');
+        final files = await FilePicker.pickFiles();
+        if (files.isNotEmpty) _snack('Document sélectionné : ' + files.first.name);
       } else if (action == 'contact') {
         await _newChat();
       }
@@ -237,7 +237,10 @@ class _DemoChatPageState extends State<DemoChatPage> {
         final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);
         if (permission != PermissionStatus.granted) throw Exception('Accès aux contacts refusé');
         final contacts = await FlutterContacts.getAll(properties: {ContactProperty.name, ContactProperty.phone});
-        if (contacts.isNotEmpty && mounted) setState(() => _messages.add(_LocalMessage('👤 Contact : ${contacts.first.displayName}', true)));
+        if (contacts.isNotEmpty && mounted) {
+          final contactName = contacts.first.displayName ?? 'Contact';
+          setState(() => _messages.add(_LocalMessage('👤 Contact : ' + contactName, true)));
+        }
       }
     } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e'))); }
   }

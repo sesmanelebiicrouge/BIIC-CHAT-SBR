@@ -35,7 +35,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if(phone.startsWith('0'))phone='+225${phone.substring(1)}';
     if(!phone.startsWith('+'))phone='+225$phone';
     setState(()=>_loading=true);
-    try{await _auth.changePhone(phone);_message('Un code SMS a été envoyé à '+phone+'. Validez-le pour confirmer le changement.');}
+    try{await _auth.changePhone(phone);_message('Un code SMS a été envoyé à '+phone+'.');await _confirmPhoneChange(phone);}
     catch(e){_message('Impossible de changer le numéro : $e');}
     finally{if(mounted)setState(()=>_loading=false);}
   }

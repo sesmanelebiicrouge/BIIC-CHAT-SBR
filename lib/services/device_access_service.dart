@@ -10,10 +10,7 @@ class DeviceAccessService {
   Future<XFile?> pickMedia() => _imagePicker.pickMedia();
   Future<XFile?> takePhoto() => _imagePicker.pickImage(source: ImageSource.camera);
 
-  Future<List<PlatformFile>> pickFiles() async {
-    final result = await FilePicker.pickFiles(allowMultiple: true, withData: false);
-    return result?.files ?? const [];
-  }
+  Future<List<PlatformFile>> pickFiles() => FilePicker.pickFiles();
 
   Future<List<Contact>> pickContacts() async {
     final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);

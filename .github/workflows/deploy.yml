@@ -1,4 +1,5 @@
 name: Deploy BIIC CHAT Web to GitHub Pages
+# Production deployment: every push to main rebuilds and publishes GitHub Pages.
 
 on:
   push:

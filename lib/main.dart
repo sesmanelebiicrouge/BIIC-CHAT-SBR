@@ -6,7 +6,6 @@ import 'pages/auth_page.dart';
 import 'pages/home_page.dart';
 import 'services/auth_service.dart';
 import 'services/backend_service.dart';
-import 'services/device_access_service.dart';
 import 'widgets/biic_brand.dart';
 
 Future<void> main() async {

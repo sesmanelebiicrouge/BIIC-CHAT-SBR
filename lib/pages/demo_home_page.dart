@@ -12,7 +12,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
   int _tab = 0;
   final _search = TextEditingController();
   final List<_DemoConversation> _chats = [
-    _DemoConversation('BIIC CHAT', 'Bienvenue sur BIIC CHAT', true, true),
+    _DemoConversation('BIIC Support', 'Bienvenue sur BIIC CHAT', true, true),
     _DemoConversation('Jean', 'Salut, comment vas-tu ?', false, false),
     _DemoConversation('Équipe BIIC', 'La réunion est à 15h.', false, false),
   ];

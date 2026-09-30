@@ -23,15 +23,21 @@ jobs:
       - name: Set application label
         run: sed -i 's/android:label="biic_chat_sbr"/android:label="BIIC CHAT"/' android/app/src/main/AndroidManifest.xml
 
-      - name: Verify Android 16 target configuration
+      - name: Configure Android 16 target
         run: |
-          test -f android/app/build.gradle.kts -o -f android/app/build.gradle
-          if grep -RqsE 'targetSdk[^0-9]*(36|flutter.targetSdkVersion)' android/app; then
-            echo "Android target configuration detected."
-          else
-            echo "Android target SDK 36 configuration was not detected."
-            exit 1
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          for p in (Path("android/app/build.gradle"), Path("android/app/build.gradle.kts")):
+              if not p.exists():
+                  continue
+              s = p.read_text()
+              s = s.replace("compileSdk = flutter.compileSdkVersion", "compileSdk = 36")
+              s = s.replace("compileSdk flutter.compileSdkVersion", "compileSdk 36")
+              s = s.replace("targetSdk = flutter.targetSdkVersion", "targetSdk = 36")
+              s = s.replace("targetSdk flutter.targetSdkVersion", "targetSdk 36")
+              p.write_text(s)
+          PY
+          grep -RqsE 'targetSdk[^0-9]*36|targetSdkVersion[^0-9]*36' android/app
 
       - name: Install dependencies
         run: flutter pub get

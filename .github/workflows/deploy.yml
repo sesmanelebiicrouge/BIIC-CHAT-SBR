@@ -44,20 +44,29 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import json
+          logo_src = Path("assets/biic_logo.svg")
+          logo_dst = Path("web/biic_logo.svg")
+          logo_dst.write_text(logo_src.read_text())
           p = Path("web/index.html")
           s = p.read_text()
           s = s.replace('<meta name="description" content="A new Flutter project.">', '<meta name="description" content="BIIC CHAT — messagerie instantanée.">')
           s = s.replace('<meta name="apple-mobile-web-app-title" content="biic_chat_sbr">', '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">')
           s = s.replace('<title>biic_chat_sbr</title>', '<title>BIIC CHAT</title>')
+          if 'rel="icon" href="biic_logo.svg"' not in s:
+              s = s.replace('<link rel="manifest" href="manifest.json">', '<link rel="icon" type="image/svg+xml" href="biic_logo.svg">\n  <link rel="manifest" href="manifest.json">')
           p.write_text(s)
           m = Path("web/manifest.json")
-          ms = m.read_text()
-          ms = ms.replace('"name": "biic_chat_sbr"', '"name": "BIIC CHAT"')
-          ms = ms.replace('"short_name": "biic_chat_sbr"', '"short_name": "BIIC CHAT"')
-          ms = ms.replace('"background_color": "#0175C2"', '"background_color": "#FFFFFF"')
-          ms = ms.replace('"theme_color": "#0175C2"', '"theme_color": "#D71920"')
-          ms = ms.replace('"description": "A new Flutter project."', '"description": "BIIC CHAT — messagerie instantanée."')
-          m.write_text(ms)
+          data = json.loads(m.read_text())
+          data["name"] = "BIIC CHAT"
+          data["short_name"] = "BIIC CHAT"
+          data["background_color"] = "#FFFFFF"
+          data["theme_color"] = "#D71920"
+          data["description"] = "BIIC CHAT — messagerie instantanée."
+          data["icons"] = [
+              {"src": "biic_logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+          ]
+          m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
 
       - name: Build Web

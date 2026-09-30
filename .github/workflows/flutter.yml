@@ -20,7 +20,7 @@ jobs:
           cache: true
 
       - name: Generate missing Flutter platform scaffolding
-        run: flutter create --platforms=android,web .
+        run: flutter create --platforms=android,web --org com.biicchat --project-name biic_chat_sbr .
 
       - name: Install dependencies
         run: flutter pub get

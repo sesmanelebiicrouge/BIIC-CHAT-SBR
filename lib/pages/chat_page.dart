@@ -189,28 +189,6 @@ class _ChatPageState extends State<ChatPage> {
       Expanded(child: StreamBuilder<List<Map<String,dynamic>>>(
         stream: _service.watchMessages(widget.conversationId),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('Erreur : \${snapshot.error}')));
-          final messages = snapshot.data ?? const [];
-          if (messages.isEmpty) return const Center(child: Text('Aucun message. Écrivez le premier !'));
-          return ListView.builder(padding: const EdgeInsets.all(16), itemCount: messages.length, itemBuilder: (context,index) {
-            final message = messages[index]; final mine = message['sender_id'] == userId;
-            final text = message['content'] as String? ?? '';
-            final mediaPath = message['media_url'] as String?; final mediaType = message['media_type'] as String? ?? '';
-            return Align(alignment: mine ? Alignment.centerRight : Alignment.centerLeft, child: Container(
-              margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.all(10),
-              constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .82),
-              decoration: BoxDecoration(color: mine ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(18)),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (mediaPath != null && mediaPath.isNotEmpty) _MediaBubble(path: mediaPath, type: mediaType, signedUrl: _signed, mine: mine),
-                if (text.isNotEmpty) Padding(padding: EdgeInsets.only(top: mediaPath != null ? 8 : 0), child: Text(text, style: TextStyle(color: mine ? Theme.of(context).colorScheme.onPrimary : null))),
-              ]),
-            ));
-          });
-        },
-      )),
-      Expanded(child: StreamBuilder<List<Map<String,dynamic>>>(
-        stream: _service.watchMessages(widget.conversationId),
-        builder: (context, snapshot) {
           if (snapshot.hasError) {
             return const Center(child: Padding(
               padding: EdgeInsets.all(20),

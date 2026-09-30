@@ -40,17 +40,14 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Check backend configuration
+      - name: Require production backend configuration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "WARNING: Supabase secrets are not configured. Publishing the BIIC CHAT demo mode so the web app remains testable."
-          else
-            echo "Supabase production configuration detected."
-          fi
-
+          test -n "$SUPABASE_URL" || (echo "::error::Missing SUPABASE_URL GitHub secret. Refusing to publish demo mode." && exit 1)
+          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "::error::Missing SUPABASE_PUBLISHABLE_KEY GitHub secret. Refusing to publish demo mode." && exit 1)
+          echo "Supabase production configuration detected. Demo fallback is disabled for release publishing."
       - name: Install SVG conversion tool
         run: |
           sudo apt-get update

@@ -33,7 +33,11 @@ class HomePage extends StatelessWidget {
                 future:service.getConversationMembers(c['id'] as String),
                 builder:(context,membersSnapshot){
                   final rows=membersSnapshot.data??const [];
-                  final names=rows.map((r){final u=r['users']; return u is Map ? (u['display_name'] as String? ?? u['email'] as String? ?? '') : '';}).where((n)=>n.isNotEmpty && n!=user.email).toList();
+                  final names=rows
+                      .where((r) => r['user_id'] != user.id)
+                      .map((r) => (r['display_name'] as String? ?? '').trim())
+                      .where((n) => n.isNotEmpty)
+                      .toList();
                   final title=(c['name'] as String? ?? '').trim().isNotEmpty ? c['name'] as String : (names.isNotEmpty?names.join(', '):'Conversation');
                   return ListTile(leading:const CircleAvatar(child:Icon(Icons.person)),title:Text(title),subtitle:Text(c['is_group']==true?'Groupe':'Discussion privée'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>ChatPage(conversationId:c['id'] as String,title:title))));
                 },

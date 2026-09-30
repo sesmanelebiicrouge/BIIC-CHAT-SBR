@@ -16,13 +16,18 @@ class DeviceAccessService {
       FilePicker.platform.pickFiles(allowMultiple: true);
 
   Future<List<Contact>> pickContacts() async {
-    final granted = await FlutterContacts.requestPermission(readonly: true);
-    if (!granted) throw Exception('Accès aux contacts refusé');
-    return FlutterContacts.getContacts(withProperties: true);
+    final permission =
+        await FlutterContacts.permissions.request(PermissionType.readWrite);
+    if (permission != PermissionStatus.granted) {
+      throw Exception('Accès aux contacts refusé');
+    }
+    return FlutterContacts.getAll(
+      properties: {ContactProperty.name, ContactProperty.phone},
+    );
   }
 
   Future<void> callNumber(String number) async {
-    final uri = Uri(scheme: 'tel', path: number);
+    final uri = Uri(scheme: 'tel', path: number.trim());
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       throw Exception('Impossible de lancer l’appel');
     }

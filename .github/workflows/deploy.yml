@@ -51,6 +51,11 @@ jobs:
             echo "Supabase production configuration detected."
           fi
 
+      - name: Install SVG conversion tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+
       - name: Prepare BIIC CHAT Web metadata
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -113,7 +118,7 @@ jobs:
           data["icons"] = [{"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]
           m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
-          convert -background none assets/biic_logo.svg -resize 512x512 web/biic_logo.png
+          rsvg-convert -w 512 -h 512 -o web/biic_logo.png assets/biic_logo.svg
 
       - name: Build Web release
         env:

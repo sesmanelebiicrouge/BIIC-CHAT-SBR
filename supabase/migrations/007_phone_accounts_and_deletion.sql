@@ -79,8 +79,7 @@ security definer
 set search_path = public, auth
 as $$
 begin
-  -- Remove private files uploaded by the account before the auth row cascades.
-  delete from storage.objects where owner_id = auth.uid()::text;
+  -- Private Storage cleanup is handled separately through the Storage API.
   delete from auth.users where id = auth.uid();
 end;
 $$;

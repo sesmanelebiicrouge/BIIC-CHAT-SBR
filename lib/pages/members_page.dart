@@ -3,6 +3,7 @@ import '../services/members_service.dart';
 import '../services/conversation_service.dart';
 import '../services/auth_service.dart';
 import 'chat_page.dart';
+import '../services/block_report_service.dart';
 
 class MembersPage extends StatefulWidget {
   const MembersPage({super.key});
@@ -12,11 +13,38 @@ class MembersPage extends StatefulWidget {
 class _MembersPageState extends State<MembersPage> {
   final _service = MembersService();
   final _conversation = ConversationService();
+  final _safety = BlockReportService();
   final _search = TextEditingController();
   late Future<List<Map<String, dynamic>>> _future;
 
   @override void initState() { super.initState(); _future = _service.getMembers(); }
   void _reload() => setState(() => _future = _service.getMembers());
+
+  Future<void> _manageMember(Map<String, dynamic> member) async {
+    final id = member['id'] as String?;
+    if (id == null) return;
+    final name = member['display_name'] as String? ?? member['email'] as String? ?? 'cet utilisateur';
+    await showModalBottomSheet<void>(context: context, builder: (sheet) => SafeArea(child: Wrap(children: [
+      ListTile(leading: const Icon(Icons.block), title: const Text('Bloquer'), onTap: () async {
+        Navigator.pop(sheet);
+        try { await _safety.blockUser(id); if (mounted) { _reload(); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$name a été bloqué.'))); } }
+        catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+      }),
+      ListTile(leading: const Icon(Icons.flag_outlined), title: const Text('Signaler'), onTap: () async {
+        Navigator.pop(sheet);
+        final reason = await showDialog<String>(context: context, builder: (dialog) {
+          final controller = TextEditingController();
+          return AlertDialog(title: const Text('Signaler cet utilisateur'), content: TextField(controller: controller, maxLength: 200, decoration: const InputDecoration(hintText: 'Motif du signalement')), actions: [
+            TextButton(onPressed: ()=>Navigator.pop(dialog), child: const Text('Annuler')),
+            FilledButton(onPressed: ()=>Navigator.pop(dialog, controller.text.trim()), child: const Text('Envoyer')),
+          ]);
+        });
+        if (reason == null || reason.isEmpty) return;
+        try { await _safety.reportUser(userId:id, reason:reason); if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Signalement envoyé.'))); }
+        catch(e) { if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString()))); }
+      }),
+    ])));
+  }
 
   Future<void> _openMember(Map<String, dynamic> member) async {
     final me = _conversation.client.auth.currentUser;
@@ -94,7 +122,7 @@ class _MembersPageState extends State<MembersPage> {
                       leading: CircleAvatar(child: Text((label.isNotEmpty ? label.substring(0, 1) : '?').toUpperCase())),
                       title: Text(label),
                       subtitle: Text('$status • Appuyer pour discuter'),
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: PopupMenuButton<String>(tooltip: 'Options', onSelected: (_) => _manageMember(member), itemBuilder: (_) => const [PopupMenuItem(value: 'safety', child: Text('Bloquer / Signaler'))]),
                       onTap: () => _openMember(member),
                     );
                   },

@@ -66,7 +66,7 @@ class _BIICSplashGateState extends State<BIICSplashGate> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: Color(0xFF0175C2),
       body: Center(
         child: Column(

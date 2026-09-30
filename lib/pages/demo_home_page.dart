@@ -43,7 +43,8 @@ class _DemoHomePageState extends State<DemoHomePage> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (_, i) {
                     final c = contacts[i];
-                    final name = c.displayName.trim().isEmpty ? 'Contact' : c.displayName;
+                    final rawName = c.displayName ?? '';
+                    final name = rawName.trim().isEmpty ? 'Contact' : rawName;
                     return ListTile(
                       leading: CircleAvatar(child: Text(name.substring(0, 1).toUpperCase())),
                       title: Text(name),
@@ -230,8 +231,8 @@ class _DemoChatPageState extends State<DemoChatPage> {
         final x = await ImagePicker().pickImage(source: ImageSource.camera);
         if (x != null) setState(() => _messages.add(_LocalMessage('📷 Photo : ${x.name}', true)));
       } else if (action == 'file') {
-        final r = await FilePicker.pickFiles();
-        if (r != null && r.files.isNotEmpty) setState(() => _messages.add(_LocalMessage('📎 ${r.files.first.name}', true)));
+        final files = await FilePicker.pickFiles();
+        if (files.isNotEmpty) setState(() => _messages.add(_LocalMessage('📎 ' + files.first.name, true)));
       } else {
         final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);
         if (permission != PermissionStatus.granted) throw Exception('Accès aux contacts refusé');

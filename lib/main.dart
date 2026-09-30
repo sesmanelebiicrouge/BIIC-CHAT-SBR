@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'pages/auth_page.dart';
@@ -71,7 +72,14 @@ class _BIICSplashGateState extends State<BIICSplashGate> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            BiicBrand(iconSize: 112, showSubtitle: false),
+            ClipRRect(
+              borderRadius: BorderRadius.all(Radius.circular(30)),
+              child: SvgPicture.asset(
+                'assets/biic_logo.svg',
+                width: 150,
+                height: 150,
+              ),
+            ),
             SizedBox(height: 28),
             Text(
               'BIENVENUE SUR BIIC CHAT',

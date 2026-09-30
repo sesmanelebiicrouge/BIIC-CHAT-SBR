@@ -62,35 +62,6 @@ class _DemoHomePageState extends State<DemoHomePage> {
     );
   }
 
-  Future<void> _attachments() async {
-    final action = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(child: Wrap(children: [
-        const ListTile(title: Text('Partager', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800))),
-        ListTile(leading: const Icon(Icons.photo_library_outlined), title: const Text('Photos et vidéos'), onTap: () => Navigator.pop(context, 'media')),
-        ListTile(leading: const Icon(Icons.camera_alt_outlined), title: const Text('Appareil photo'), onTap: () => Navigator.pop(context, 'camera')),
-        ListTile(leading: const Icon(Icons.attach_file), title: const Text('Document'), onTap: () => Navigator.pop(context, 'file')),
-        ListTile(leading: const Icon(Icons.contacts_outlined), title: const Text('Contact'), onTap: () => Navigator.pop(context, 'contact')),
-      ])),
-    );
-    if (!mounted || action == null) return;
-    try {
-      if (action == 'media') {
-        final x = await ImagePicker().pickMedia();
-        if (x != null) _snack('Média sélectionné : ${x.name}');
-      } else if (action == 'camera') {
-        final x = await ImagePicker().pickImage(source: ImageSource.camera);
-        if (x != null) _snack('Photo sélectionnée : ${x.name}');
-      } else if (action == 'file') {
-        final files = await FilePicker.pickFiles();
-        if (files.isNotEmpty) _snack('Document sélectionné : ' + files.first.name);
-      } else if (action == 'contact') {
-        await _newChat();
-      }
-    } catch (e) {
-      if (mounted) _snack('Accès impossible : $e');
-    }
-  }
 
   void _openChat(String name) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => DemoChatPage(title: name)));

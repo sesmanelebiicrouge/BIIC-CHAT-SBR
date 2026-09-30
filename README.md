@@ -1,63 +1,101 @@
-# BIIC-CHAT-SBR
+# BIIC CHAT
 
-BIIC CHAT est une application Flutter de messagerie et de communication, conçue pour Android, iOS et le Web.
+BIIC CHAT est une application Flutter de messagerie multiplateforme, conçue pour offrir une expérience simple, rapide et accessible sur Android, iOS et Web.
 
-## État du projet
+## Fonctionnalités
 
-Le dépôt constitue une base de développement fonctionnelle, mais ce n'est pas encore une version prête à publier sur les stores. Les étapes restantes comprennent notamment le backend complet, l'authentification, la messagerie temps réel, les tests sur appareils réels et la génération des plateformes natives.
+### Compte et sécurité
+- inscription et connexion par e-mail/mot de passe ;
+- récupération du mot de passe ;
+- profil utilisateur créé automatiquement après inscription ;
+- Row Level Security (RLS) sur les données privées ;
+- conversations accessibles uniquement à leurs membres ;
+- médias stockés dans un bucket privé ;
+- aucune clé de service Supabase dans l'application.
 
-## Stack
+### Messagerie
+- liste des conversations ;
+- recherche de membres ;
+- création automatique d'une conversation privée ;
+- messages persistants dans Supabase ;
+- réception temps réel via Supabase Realtime ;
+- horodatage côté serveur ;
+- pièces jointes prévues via stockage privé ;
+- partage de contacts, images, photos et fichiers côté appareil.
+
+### Accessibilité et expérience
+- interface Material 3 ;
+- navigation simple ;
+- états de chargement et erreurs ;
+- recherche de membres ;
+- fonctionnement dégradé sans configuration backend pour le mode démo ;
+- préparation Android, iOS et Web.
+
+## Architecture
 
 - Flutter / Dart
+- Supabase Auth
+- Supabase Postgres
+- Supabase Realtime
+- Supabase Storage
 - Material 3
-- Supabase pour l'authentification, la base de données, le temps réel et le stockage
-- Plugins Flutter pour images, fichiers, contacts et liens téléphoniques
-
-## Développement local
-
-flutter pub get
-flutter create .
-flutter analyze
-flutter test
-flutter run
-
-flutter create . est nécessaire tant que les plateformes natives complètes Android/iOS ne sont pas présentes dans le dépôt.
+- file_picker
+- image_picker
+- flutter_contacts
+- url_launcher
 
 ## Configuration Supabase
 
-Pour activer le backend, fournir les paramètres au lancement sans les mettre dans Git :
+Ne committez jamais une clé secrète de service.
 
-flutter run --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co --dart-define=SUPABASE_ANON_KEY=YOUR_ANON_KEY
+Utilisez une clé publique côté client :
 
-Ne jamais commit une clé secrète de service Supabase. Utiliser uniquement la clé publique prévue pour le client et sécuriser les données avec RLS.
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://YOUR_PROJECT.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
+```
 
-## Fonctionnalités déjà présentes
+L'ancien nom `SUPABASE_ANON_KEY` reste accepté pour compatibilité.
 
-- interface de chat locale ;
-- sélection d'images ;
-- prise de photo ;
-- sélection de fichiers ;
-- lecture des contacts après autorisation ;
-- ouverture du composeur téléphonique ;
-- service de conversations Supabase préparé.
+Appliquer les migrations dans l'ordre :
+1. `001_initial_schema.sql`
+2. `002_members_auth_hardening.sql`
+3. `003_chat_media_storage.sql`
+4. `004_rls_realtime_fix.sql`
 
-## Avant publication
+Après migration, vérifier dans Supabase que Realtime est activé et que le bucket `chat-media` reste privé.
 
-1. Générer et vérifier Android/iOS.
-2. Ajouter authentification et profils.
-3. Implémenter messages persistants et temps réel.
-4. Implémenter upload média avec règles Storage.
-5. Ajouter notifications push.
-6. Ajouter tests unitaires, widget et intégration.
-7. Configurer signature Android et bundle release.
-8. Configurer App Store Connect pour iOS.
-9. Préparer politique de confidentialité, fiches stores et comptes de démonstration.
-10. Effectuer les tests de sécurité, performance, permissions et récupération de compte.
+## Développement
+
+```bash
+flutter pub get
+flutter create .
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+flutter build web --release
+```
+
+Le dépôt ne contient pas encore les plateformes natives générées. Le workflow CI génère Android et Web pour validation. Pour iOS, générer la plateforme sur macOS avec Xcode avant une distribution App Store.
 
 ## CI
 
-GitHub Actions exécute flutter pub get, flutter analyze et flutter test sur les pushes et pull requests.
+GitHub Actions exécute l'installation des dépendances, le formatage, l'analyse, les tests et le build Web. Les plateformes Android/Web manquantes sont générées pendant la CI afin de détecter les erreurs de compilation.
 
-## Publication Google Play
+## Avant publication
 
-Au 31 août 2026, les nouvelles applications et mises à jour Google Play doivent cibler Android 16 / API 36 ou supérieur. Vérifier les exigences actuelles de Play Console avant chaque soumission.
+- définir l'identifiant d'application Android et le bundle identifier iOS ;
+- configurer les icônes, le nom de l'application et les écrans de lancement ;
+- générer et tester les plateformes natives ;
+- configurer les permissions Android/iOS uniquement pour les fonctions réellement utilisées ;
+- configurer la signature Android et iOS ;
+- ajouter les notifications push ;
+- ajouter la politique de confidentialité et les conditions d'utilisation ;
+- tester inscription, récupération de compte, messagerie, médias, réseau lent/hors ligne et suppression de compte ;
+- effectuer des tests sur plusieurs tailles d'écran et appareils réels ;
+- vérifier les exigences actuelles de Google Play et App Store Connect avant chaque soumission.
+
+## État
+
+Le projet dispose maintenant d'une base backend réelle pour les comptes, profils, membres, conversations privées, messages temps réel et stockage média privé. Les tests sur appareils réels, la configuration des comptes de publication et certaines intégrations natives de distribution restent nécessaires avant une publication publique.

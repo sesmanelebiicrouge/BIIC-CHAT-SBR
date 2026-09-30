@@ -90,18 +90,32 @@ class _DemoHomePageState extends State<DemoHomePage> {
       ),
       body: IndexedStack(index: _tab, children: [
         Column(children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(18, 18, 18, 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('BIENVENUE SUR BIIC CHAT', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
             child: TextField(
               controller: _search,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                hintText: 'Rechercher une discussion',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _search.text.isEmpty ? null : IconButton(onPressed: () { _search.clear(); setState(() {}); }, icon: const Icon(Icons.clear)),
+                hintText: 'SBR recherche',
+                hintStyle: const TextStyle(color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: .10),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide.none),
+                suffixIcon: _search.text.isEmpty ? null : IconButton(onPressed: () { _search.clear(); setState(() {}); }, icon: const Icon(Icons.clear, color: Colors.white70)),
               ),
             ),
           ),
+
           Expanded(child: filtered.isEmpty
             ? const Center(child: Text('Aucune discussion'))
             : ListView.separated(

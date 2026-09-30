@@ -45,15 +45,17 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import json
+          from datetime import datetime, timezone
           logo_src = Path("assets/biic_logo.svg")
           logo_dst = Path("web/biic_logo.svg")
           logo_dst.write_text(logo_src.read_text())
           sitemap = Path("web/sitemap.xml")
-          sitemap.write_text("""<?xml version="1.0" encoding="UTF-8"?>
-urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc></url>
-  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc></url>
-  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc></url>
+          now = datetime.now(timezone.utc).date().isoformat()
+          sitemap.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc><lastmod>{now}</lastmod></url>
+  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc><lastmod>{now}</lastmod></url>
+  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc><lastmod>{now}</lastmod></url>
 </urlset>
 """)
           robots = Path("web/robots.txt")

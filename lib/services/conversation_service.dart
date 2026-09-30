@@ -153,4 +153,13 @@ class ConversationService {
         .order('created_at', ascending: true)
         .map((rows) => List<Map<String, dynamic>>.from(rows));
   }
+
+  Stream<List<Map<String, dynamic>>> watchMessageReads(String conversationId) {
+    if (conversationId.trim().isEmpty) return const Stream.empty();
+    return _supabase
+        .from('message_reads')
+        .stream(primaryKey: ['message_id', 'user_id'])
+        .order('read_at', ascending: true)
+        .map((rows) => List<Map<String, dynamic>>.from(rows));
+  }
 }

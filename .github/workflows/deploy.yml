@@ -40,13 +40,16 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Check production configuration
+      - name: Check backend configuration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          test -n "$SUPABASE_URL" || (echo "ERROR: missing SUPABASE_URL repository secret" && exit 1)
-          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "ERROR: missing SUPABASE_PUBLISHABLE_KEY repository secret" && exit 1)
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "WARNING: Supabase secrets are not configured. Publishing the BIIC CHAT demo mode so the web app remains testable."
+          else
+            echo "Supabase production configuration detected."
+          fi
 
       - name: Prepare BIIC CHAT Web metadata
         env:

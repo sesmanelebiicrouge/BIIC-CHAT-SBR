@@ -62,5 +62,10 @@ class AuthService {
     );
   }
 
+  Future<void> deleteMyAccount() async {
+    await _client.rpc('delete_my_account');
+    await _client.auth.signOut();
+  }
+
   Future<void> signOut() => _client.auth.signOut();
 }

@@ -19,6 +19,29 @@ class _ChatPageState extends State<ChatPage> {
   final _controller = TextEditingController();
   bool _sending = false;
   bool _uploading = false;
+  final Set<String> _readMarked = <String>{};
+
+  Future<void> _markIncomingAsRead(
+      List<Map<String, dynamic>> messages, String? userId) async {
+    if (userId == null || userId.isEmpty) return;
+    final ids = messages
+        .where((message) => message['sender_id'] != userId)
+        .map((message) => message['id']?.toString() ?? '')
+        .where((id) => id.isNotEmpty && !_readMarked.contains(id))
+        .toList();
+    if (ids.isEmpty) return;
+
+    _readMarked.addAll(ids);
+    try {
+      await _service.markMessagesRead(
+        userId: userId,
+        conversationId: widget.conversationId,
+        messageIds: ids,
+      );
+    } catch (_) {
+      _readMarked.removeAll(ids);
+    }
+  }
 
   Future<void> _send() async {
     final text = _controller.text.trim();
@@ -172,6 +195,96 @@ class _ChatPageState extends State<ChatPage> {
               ]),
             ));
           });
+        },
+      )),
+      Expanded(child: StreamBuilder<List<Map<String,dynamic>>>(
+        stream: _service.watchMessages(widget.conversationId),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('Impossible de charger les messages.'),
+            ));
+          }
+          final messages = snapshot.data ?? const [];
+          _markIncomingAsRead(messages, userId);
+          if (messages.isEmpty) {
+            return const Center(child: Text('Aucun message. Écrivez le premier !'));
+          }
+          return StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _service.watchMessageReads(widget.conversationId),
+            builder: (context, readSnapshot) {
+              final reads = readSnapshot.data ?? const [];
+              return ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[index];
+                  final mine = message['sender_id'] == userId;
+                  final text = message['content'] as String? ?? '';
+                  final mediaPath = message['media_url'] as String?;
+                  final mediaType = message['media_type'] as String? ?? '';
+                  final isRead = mine && reads.any((read) =>
+                      read['message_id']?.toString() == message['id']?.toString() &&
+                      read['user_id']?.toString() != userId);
+                  return Align(
+                    alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.sizeOf(context).width * .82,
+                      ),
+                      decoration: BoxDecoration(
+                        color: mine
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (mediaPath != null && mediaPath.isNotEmpty)
+                            _MediaBubble(
+                              path: mediaPath,
+                              type: mediaType,
+                              signedUrl: _signed,
+                              mine: mine,
+                            ),
+                          if (text.isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(top: mediaPath != null ? 8 : 0),
+                              child: Text(
+                                text,
+                                style: TextStyle(
+                                  color: mine
+                                      ? Theme.of(context).colorScheme.onPrimary
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          if (mine)
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                isRead ? '✓✓ Lu' : '✓ Envoyé',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary
+                                      .withValues(alpha: .8),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
         },
       )),
       SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [

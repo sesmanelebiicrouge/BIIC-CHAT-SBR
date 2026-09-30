@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'pages/auth_page.dart';
 import 'pages/home_page.dart';
+import 'pages/demo_home_page.dart';
 import 'services/auth_service.dart';
 import 'services/backend_service.dart';
 import 'services/device_access_service.dart';
@@ -34,7 +35,7 @@ class BIICChatApp extends StatelessWidget {
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(16)), borderSide: BorderSide(color: Color(0xFFE7E7E7))),
         ),
       ),
-      home: AppConfig.hasSupabaseConfig ? const AuthGate() : const ChatHomePage(),
+      home: AppConfig.hasSupabaseConfig ? const AuthGate() : const DemoHomePage(),
     );
   }
 }

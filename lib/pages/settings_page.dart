@@ -90,7 +90,11 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(()=>_loading=true);
     try{
       final result=await _auth.enrollTotp(friendlyName:'BIIC CHAT');
-      _factorId=result.id;_qrCode=result.totp.qrCode;_secret=result.totp.secret;_code.clear();
+      final totp = result.totp;
+      if (totp == null) {
+        throw StateError('La configuration TOTP n\'a pas retourné les informations QR nécessaires.');
+      }
+      _factorId=result.id;_qrCode=totp.qrCode;_secret=totp.secret;_code.clear();
       if(mounted)showDialog(context:context,builder:(context)=>AlertDialog(
         title:const Text('Sécurité renforcée'),
         content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[

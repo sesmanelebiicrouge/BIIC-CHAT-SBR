@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../services/conversation_service.dart';
 import '../widgets/biic_brand.dart';
 import 'members_page.dart';
+import 'contacts_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
@@ -16,6 +17,7 @@ class HomePage extends StatelessWidget {
       appBar:AppBar(
         title:const BiicBrand(iconSize:36,showSubtitle:false),
         actions:[
+          IconButton(tooltip:'Contacts',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ContactsPage())),icon:const Icon(Icons.contacts_outlined)),
           IconButton(tooltip:'Paramètres',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const SettingsPage())),icon:const Icon(Icons.settings_outlined)),
           IconButton(tooltip:'Mon profil',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ProfilePage())),icon:const Icon(Icons.account_circle_outlined)),
           IconButton(tooltip:'Nouveau chat',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),icon:const Icon(Icons.person_add_alt_1)),
@@ -34,7 +36,10 @@ class HomePage extends StatelessWidget {
             const SizedBox(height:7),
             const Text('Commencez une nouvelle discussion avec un membre de BIIC CHAT.',textAlign:TextAlign.center,style:TextStyle(color:Color(0xFF777777))),
             const SizedBox(height:18),
-            FilledButton.icon(onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),icon:const Icon(Icons.chat_rounded),label:const Text('Démarrer une discussion')),
+            Wrap(spacing:10,runSpacing:10,alignment:WrapAlignment.center,children:[
+              FilledButton.icon(onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),icon:const Icon(Icons.chat_rounded),label:const Text('Nouveau chat')),
+              OutlinedButton.icon(onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ContactsPage())),icon:const Icon(Icons.contacts_outlined),label:const Text('Importer contacts')),
+            ]),
           ])));
           return ListView.separated(
             padding:const EdgeInsets.only(top:8),

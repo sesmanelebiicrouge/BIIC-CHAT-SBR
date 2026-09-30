@@ -45,7 +45,7 @@ class AuthService {
     return _client.auth.verifyOTP(type: OtpType.phoneChange, phone: phone.trim(), token: token.trim());
   }
 
-  Future<MFAEnrollResponse> enrollTotp({String? friendlyName}) {
+  Future<AuthMFAEnrollResponse> enrollTotp({String? friendlyName}) {
     return _client.auth.mfa.enroll(
       factorType: FactorType.totp,
       friendlyName: friendlyName,
@@ -53,7 +53,7 @@ class AuthService {
     );
   }
 
-  Future<AuthResponse> verifyTotp({required String factorId, required String code}) async {
+  Future<AuthMFAVerifyResponse> verifyTotp({required String factorId, required String code}) async {
     final challenge = await _client.auth.mfa.challenge(factorId: factorId);
     return _client.auth.mfa.verify(
       factorId: factorId,

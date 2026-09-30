@@ -1,7 +1,10 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ConversationService {
-  final _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  ConversationService({SupabaseClient? client})
+      : _supabase = client ?? Supabase.instance.client;
 
   Future<String> createConversation({
     required String name,
@@ -9,33 +12,48 @@ class ConversationService {
     required List<String> memberIds,
     bool isGroup = false,
   }) async {
+    if (memberIds.isEmpty) {
+      throw ArgumentError.value(memberIds, 'memberIds', 'must not be empty');
+    }
+
     try {
-      final response = await _supabase.from('conversations').insert({
-        'name': name,
-        'created_by': createdBy,
-        'is_group': isGroup,
-        'created_at': DateTime.now().toIso8601String(),
-      }).select();
+      final response = await _supabase
+          .from('conversations')
+          .insert({
+            'name': name.trim(),
+            'created_by': createdBy,
+            'is_group': isGroup,
+          })
+          .select('id')
+          .single();
 
-      final conversationId = response[0]['id'];
+      final conversationId = response['id'] as String;
+      final now = DateTime.now().toIso8601String();
 
-      final members = memberIds
-          .map((memberId) => {
-                'conversation_id': conversationId,
-                'user_id': memberId,
-                'joined_at': DateTime.now().toIso8601String(),
-              })
-          .toList();
-
-      await _supabase.from('conversation_members').insert(members);
+      await _supabase.from('conversation_members').insert(
+            memberIds
+                .toSet()
+                .map(
+                  (memberId) => {
+                    'conversation_id': conversationId,
+                    'user_id': memberId,
+                    'joined_at': now,
+                  },
+                )
+                .toList(),
+          );
 
       return conversationId;
-    } catch (e) {
-      throw Exception('Erreur lors de la creation de la conversation: $e');
+    } on PostgrestException catch (error) {
+      throw Exception(
+        'Impossible de créer la conversation: ${error.message}',
+      );
     }
   }
 
   Stream<List<Map<String, dynamic>>> getUserConversations(String userId) {
+    if (userId.isEmpty) return const Stream.empty();
+
     return _supabase
         .from('conversations')
         .stream(primaryKey: ['id'])

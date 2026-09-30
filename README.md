@@ -63,6 +63,9 @@ Appliquer les migrations dans l'ordre :
 2. `002_members_auth_hardening.sql`
 3. `003_chat_media_storage.sql`
 4. `004_rls_realtime_fix.sql`
+5. `005_profiles_reports_safety.sql`
+6. `006_privacy_hardening.sql`
+7. `007_phone_accounts_and_deletion.sql`
 
 Après migration, vérifier dans Supabase que Realtime est activé et que le bucket `chat-media` reste privé.
 
@@ -92,10 +95,10 @@ GitHub Actions exécute l'installation des dépendances, le formatage, l'analyse
 - configurer la signature Android et iOS ;
 - ajouter les notifications push ;
 - ajouter la politique de confidentialité et les conditions d'utilisation ;
-- tester inscription, récupération de compte, messagerie, médias, réseau lent/hors ligne et suppression de compte ;
+- tester inscription SMS, récupération de compte, messagerie, médias, réseau lent/hors ligne et suppression de compte ;
 - effectuer des tests sur plusieurs tailles d'écran et appareils réels ;
 - vérifier les exigences actuelles de Google Play et App Store Connect avant chaque soumission.
 
 ## État
 
-Le projet dispose maintenant d'une base backend réelle pour les comptes, profils, membres, conversations privées, messages temps réel et stockage média privé. Les tests sur appareils réels, la configuration des comptes de publication et certaines intégrations natives de distribution restent nécessaires avant une publication publique.
+Le projet dispose maintenant d'une base backend réelle avec authentification par téléphone/SMS, profils, suppression de compte pour les comptes, profils, membres, conversations privées, messages temps réel et stockage média privé. Les tests sur appareils réels, la configuration des comptes de publication et certaines intégrations natives de distribution restent nécessaires avant une publication publique.

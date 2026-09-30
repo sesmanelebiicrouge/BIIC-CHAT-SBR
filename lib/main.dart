@@ -64,7 +64,7 @@ class ChatHomePage extends StatefulWidget {
 class _ChatHomePageState extends State<ChatHomePage> {
   final _messageController = TextEditingController();
   final _deviceAccess = DeviceAccessService();
-  final List<_ChatMessage> _messages = const [
+  final List<_ChatMessage> _messages = [
     _ChatMessage(sender: 'BIIC CHAT', text: 'Bienvenue sur BIIC CHAT ! Votre espace de discussion est prêt.', isMe: false),
   ];
 

@@ -100,41 +100,122 @@ class _AuthPageState extends State<AuthPage> {
   }
   InputDecoration _decoration(String label,IconData icon)=>InputDecoration(labelText:label,prefixIcon:Icon(icon));
 
-  @override Widget build(BuildContext context){
-    return Scaffold(body:DecoratedBox(
-      decoration:const BoxDecoration(gradient:LinearGradient(begin:Alignment.topCenter,end:Alignment.bottomCenter,colors:[Color(0xFFFFF3F3),Color(0xFFF8F8F8)])),
-      child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:430),child:Card(elevation:0,child:Padding(padding:const EdgeInsets.all(26),child:Column(children:[
-        const BiicBrand(iconSize:72),const SizedBox(height:10),
-        Text(_title,style:const TextStyle(fontSize:23,fontWeight:FontWeight.w800),textAlign:TextAlign.center),
-        const SizedBox(height:7),Text(_subtitle,textAlign:TextAlign.center,style:const TextStyle(color:Color(0xFF777777))),const SizedBox(height:24),
-        if(_isVerify)...[
-          Text('Numéro : $_pendingPhone',style:const TextStyle(fontWeight:FontWeight.w600)),const SizedBox(height:14),
-          TextField(controller:_otp,keyboardType:TextInputType.number,maxLength:6,textAlign:TextAlign.center,style:const TextStyle(fontSize:25,fontWeight:FontWeight.w800,letterSpacing:8),decoration:_decoration('Code SMS',Icons.sms_outlined).copyWith(counterText:'')),
-        ]else if(_mode==_AuthMode.setNewPassword)...[
-          TextField(controller:_password,obscureText:_obscurePassword,decoration:_decoration('Nouveau mot de passe',Icons.lock_outline).copyWith(suffixIcon:IconButton(onPressed:()=>setState(()=>_obscurePassword=!_obscurePassword),icon:Icon(_obscurePassword?Icons.visibility_outlined:Icons.visibility_off_outlined)))),const SizedBox(height:12),
-          TextField(controller:_confirmPassword,obscureText:true,decoration:_decoration('Confirmer le mot de passe',Icons.lock_reset_outlined)),
-        ]else...[
-          if(_isRegister)...[TextField(controller:_name,decoration:_decoration('Nom affiché',Icons.person_outline)),const SizedBox(height:12)],
-          TextField(controller:_phone,keyboardType:TextInputType.phone,decoration:_decoration('Numéro de téléphone',Icons.phone_outlined).copyWith(hintText:'+225 07 00 00 00 00')),
-          if(_mode!=_AuthMode.forgotPassword)...[
-            const SizedBox(height:12),
-            TextField(controller:_password,obscureText:_obscurePassword,decoration:_decoration('Mot de passe',Icons.lock_outline).copyWith(suffixIcon:IconButton(onPressed:()=>setState(()=>_obscurePassword=!_obscurePassword),icon:Icon(_obscurePassword?Icons.visibility_outlined:Icons.visibility_off_outlined)))),
-            if(_isRegister)...[const SizedBox(height:12),TextField(controller:_confirmPassword,obscureText:true,decoration:_decoration('Confirmer le mot de passe',Icons.lock_reset_outlined))],
+@override
+  Widget build(BuildContext context) {
+    final content = <Widget>[
+      const BiicBrand(iconSize: 72),
+      const SizedBox(height: 10),
+      Text(_title, style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800), textAlign: TextAlign.center),
+      const SizedBox(height: 7),
+      Text(_subtitle, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF777777))),
+      const SizedBox(height: 24),
+      if (_isVerify) ...[
+        Text('Numéro : $_pendingPhone', style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 14),
+        TextField(
+          controller: _otp,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800, letterSpacing: 8),
+          decoration: _decoration('Code SMS', Icons.sms_outlined).copyWith(counterText: ''),
+        ),
+      ] else if (_mode == _AuthMode.setNewPassword) ...[
+        TextField(
+          controller: _password,
+          obscureText: _obscurePassword,
+          decoration: _decoration('Nouveau mot de passe', Icons.lock_outline).copyWith(
+            suffixIcon: IconButton(
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(controller: _confirmPassword, obscureText: true, decoration: _decoration('Confirmer le mot de passe', Icons.lock_reset_outlined)),
+      ] else ...[
+        if (_isRegister) ...[
+          TextField(controller: _name, decoration: _decoration('Nom affiché', Icons.person_outline)),
+          const SizedBox(height: 12),
+        ],
+        TextField(
+          controller: _phone,
+          keyboardType: TextInputType.phone,
+          decoration: _decoration('Numéro de téléphone', Icons.phone_outlined).copyWith(hintText: '+225 07 00 00 00 00'),
+        ),
+        if (_mode != _AuthMode.forgotPassword) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _password,
+            obscureText: _obscurePassword,
+            decoration: _decoration('Mot de passe', Icons.lock_outline).copyWith(
+              suffixIcon: IconButton(
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+              ),
+            ),
+          ),
+          if (_isRegister) ...[
+            const SizedBox(height: 12),
+            TextField(controller: _confirmPassword, obscureText: true, decoration: _decoration('Confirmer le mot de passe', Icons.lock_reset_outlined)),
           ],
         ],
-        const SizedBox(height:18),
-        SizedBox(width:double.infinity,child:FilledButton(onPressed:_loading?null:_submit,style:FilledButton.styleFrom(backgroundColor:const Color(0xFFD71920),foregroundColor:Colors.white,padding:const EdgeInsets.symmetric(vertical:14)),child:Text(_loading?'Chargement...':_buttonText))),
-        if(_isVerify)TextButton(onPressed:_loading?null:_resendCode,child:const Text('Renvoyer le code')),
-        if(_mode==_AuthMode.signIn)TextButton(onPressed:_loading?null:()=>_switchMode(_AuthMode.forgotPassword),child:const Text('Mot de passe oublié ?')),
-        if(_mode==_AuthMode.signIn||_mode==_AuthMode.register)TextButton(onPressed:_loading?null:()=>_switchMode(_isRegister?_AuthMode.signIn:_AuthMode.register),child:Text(_isRegister?'J’ai déjà un compte':'Créer un compte')),
-        if(_mode==_AuthMode.forgotPassword||_mode==_AuthMode.setNewPassword)TextButton(onPressed:_loading?null:()=>_switchMode(_AuthMode.signIn),child:const Text('Retour à la connexion')),
-        const SizedBox(height:8),
-        Wrap(alignment:WrapAlignment.center,children:[
-          TextButton(onPressed:()=>_openLegal('privacy.html'),child:const Text('Confidentialité')),
-          TextButton(onPressed:()=>_openLegal('terms.html'),child:const Text('Conditions d’utilisation')),
-        ]),
-      ]))))),
-    ));
+      ],
+      const SizedBox(height: 18),
+      SizedBox(
+        width: double.infinity,
+        child: FilledButton(
+          onPressed: _loading ? null : _submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFD71920),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          child: Text(_loading ? 'Chargement...' : _buttonText),
+        ),
+      ),
+      if (_isVerify) TextButton(onPressed: _loading ? null : _resendCode, child: const Text('Renvoyer le code')),
+      if (_mode == _AuthMode.signIn) TextButton(onPressed: _loading ? null : () => _switchMode(_AuthMode.forgotPassword), child: const Text('Mot de passe oublié ?')),
+      if (_mode == _AuthMode.signIn || _mode == _AuthMode.register)
+        TextButton(onPressed: _loading ? null : () => _switchMode(_isRegister ? _AuthMode.signIn : _AuthMode.register), child: Text(_isRegister ? 'J’ai déjà un compte' : 'Créer un compte')),
+      if (_mode == _AuthMode.forgotPassword || _mode == _AuthMode.setNewPassword)
+        TextButton(onPressed: _loading ? null : () => _switchMode(_AuthMode.signIn), child: const Text('Retour à la connexion')),
+      const SizedBox(height: 8),
+      Wrap(
+        alignment: WrapAlignment.center,
+        children: [
+          TextButton(onPressed: () => _openLegal('privacy.html'), child: const Text('Confidentialité')),
+          TextButton(onPressed: () => _openLegal('terms.html'), child: const Text('Conditions d’utilisation')),
+        ],
+      ),
+    ];
+
+    return Scaffold(
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFFFF3F3), Color(0xFFF8F8F8)],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Card(
+                elevation: 0,
+                child: Padding(
+                  padding: const EdgeInsets.all(26),
+                  child: Column(children: content),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   String get _buttonText=>switch(_mode){

@@ -120,9 +120,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
           if (file != null) _sendMessage('Photo prise : ${file.name}');
           break;
         case _AttachmentAction.file:
-          final result = await _deviceAccess.pickFiles();
-          if (result != null) {
-            final names = result.files.map((file) => file.name).join(', ');
+          final files = await _deviceAccess.pickFiles();
+          if (files.isNotEmpty) {
+            final names = files.map((file) => file.name).join(', ');
             _sendMessage('Fichier(s) : $names');
           }
           break;
@@ -159,7 +159,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
                   ? null
                   : IconButton(
                       icon: const Icon(Icons.phone),
-                      onPressed: () => _deviceAccess.callNumber(phone!),
+                      onPressed: () => _deviceAccess.callNumber(phone),
                     ),
               onTap: phone == null
                   ? null

@@ -7,6 +7,6 @@ Future<void> initializeBackend() async {
 
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
-    anonKey: AppConfig.supabaseAnonKey,
+    publishableKey: AppConfig.supabaseKey,
   );
 }

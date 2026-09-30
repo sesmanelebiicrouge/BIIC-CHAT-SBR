@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'pages/auth_page.dart';
 import 'pages/members_page.dart';
+import 'pages/home_page.dart';
 import 'services/auth_service.dart';
 import 'services/backend_service.dart';
 import 'services/device_access_service.dart';
@@ -43,7 +44,7 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = snapshot.data?.session ?? auth.currentSession;
         if (session == null) return const AuthPage();
-        return const MembersPage();
+        return const HomePage();
       },
     );
   }

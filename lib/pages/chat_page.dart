@@ -65,7 +65,8 @@ class _ChatPageState extends State<ChatPage> {
             itemCount: contacts.length,
             itemBuilder: (_, index) {
               final item = contacts[index];
-              final name = item.displayName.isEmpty ? 'Contact' : item.displayName;
+              final rawName = item.displayName ?? '';
+              final name = rawName.isEmpty ? 'Contact' : rawName;
               return ListTile(
                 leading: CircleAvatar(child: Text(name.substring(0, 1).toUpperCase())),
                 title: Text(name),
@@ -80,7 +81,8 @@ class _ChatPageState extends State<ChatPage> {
     if (contact == null) return;
     final user = _service.client.auth.currentUser;
     if (user == null) return;
-    final name = contact.displayName.isEmpty ? 'Contact' : contact.displayName;
+    final rawName = contact.displayName ?? '';
+    final name = rawName.isEmpty ? 'Contact' : rawName;
     final phone = contact.phones.isEmpty ? '' : contact.phones.first.number;
     await _service.sendMessage(
       conversationId: widget.conversationId,

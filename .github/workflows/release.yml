@@ -20,6 +20,29 @@ jobs:
       - name: Generate Android platform
         run: flutter create --platforms=android --org com.biicchat --project-name biic_chat_sbr .
 
+      - name: Install SVG conversion tool
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y librsvg2-bin
+
+      - name: Install BIIC CHAT launcher icon
+        run: |
+          mkdir -p android/app/src/main/res/mipmap-mdpi
+          mkdir -p android/app/src/main/res/mipmap-hdpi
+          mkdir -p android/app/src/main/res/mipmap-xhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxhdpi
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          rsvg-convert -w 48 -h 48 -o android/app/src/main/res/mipmap-mdpi/ic_launcher.png assets/biic_logo.svg
+          rsvg-convert -w 72 -h 72 -o android/app/src/main/res/mipmap-hdpi/ic_launcher.png assets/biic_logo.svg
+          rsvg-convert -w 96 -h 96 -o android/app/src/main/res/mipmap-xhdpi/ic_launcher.png assets/biic_logo.svg
+          rsvg-convert -w 144 -h 144 -o android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png assets/biic_logo.svg
+          rsvg-convert -w 192 -h 192 -o android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png assets/biic_logo.svg
+          cp android/app/src/main/res/mipmap-mdpi/ic_launcher.png android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-hdpi/ic_launcher.png android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xhdpi/ic_launcher.png android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          cp android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+
       - name: Set application label
         run: sed -i 's/android:label="biic_chat_sbr"/android:label="BIIC CHAT"/' android/app/src/main/AndroidManifest.xml
 

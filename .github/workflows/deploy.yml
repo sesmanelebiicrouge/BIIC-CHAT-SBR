@@ -14,10 +14,12 @@ concurrency:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -31,57 +33,72 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Format Dart sources
-        run: dart format .
-
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
       - name: Test
         run: flutter test
 
+      - name: Check production configuration
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          test -n "$SUPABASE_URL" || (echo "ERROR: missing SUPABASE_URL repository secret" && exit 1)
+          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "ERROR: missing SUPABASE_PUBLISHABLE_KEY repository secret" && exit 1)
+
       - name: Prepare BIIC CHAT Web metadata
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import json
           from datetime import datetime, timezone
+
           logo_src = Path("assets/biic_logo.svg")
           logo_dst = Path("web/biic_logo.svg")
           logo_dst.write_text(logo_src.read_text())
-          sitemap = Path("web/sitemap.xml")
-          now = datetime.now(timezone.utc).date().isoformat()
-          sitemap.write_text(f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc><lastmod>{now}</lastmod></url>
-  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc><lastmod>{now}</lastmod></url>
-  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc><lastmod>{now}</lastmod></url>
-</urlset>
-""")
-          robots = Path("web/robots.txt")
-          robots.write_text("""User-agent: *
-Allow: /
 
-Sitemap: https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/sitemap.xml
-""")
+          now = datetime.now(timezone.utc).date().isoformat()
+          sitemap = Path("web/sitemap.xml")
+          sitemap.write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc><lastmod>{now}</lastmod></url>
+            <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc><lastmod>{now}</lastmod></url>
+            <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc><lastmod>{now}</lastmod></url>
+          </urlset>
+          ''')
+
+          Path("web/robots.txt").write_text('''User-agent: *
+          Allow: /
+
+          Sitemap: https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/sitemap.xml
+          ''')
+
           p = Path("web/index.html")
           s = p.read_text()
-          s = s.replace('<meta name="description" content="A new Flutter project.">', '<meta name="description" content="BIIC CHAT — messagerie instantanée par numéro de téléphone, avec messages, médias, appels audio et vidéo.">')
-          s = s.replace('</head>', '''  <link rel="canonical" href="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
-  <meta property="og:title" content="BIIC CHAT">
-  <meta property="og:description" content="BIIC CHAT — messagerie instantanée.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
-  <meta property="og:image" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png">
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT","applicationCategory":"CommunicationApplication","operatingSystem":"Android, Web","description":"BIIC CHAT — application de messagerie instantanée.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png"}
-  </script>
-</head>''')
-          s = s.replace('<meta name="apple-mobile-web-app-title" content="biic_chat_sbr">', '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">')
-          s = s.replace('<title>biic_chat_sbr</title>', '<title>BIIC CHAT</title>')
-          if 'rel="icon" href="biic_logo.png"' not in s:
-              s = s.replace('<link rel="manifest" href="manifest.json">', '<link rel="icon" type="image/png" sizes="512x512" href="biic_logo.png">\n  <link rel="manifest" href="manifest.json">')
+          s = s.replace(
+              '<meta name="description" content="A new Flutter project.">',
+              '<meta name="description" content="BIIC CHAT — messagerie instantanée par numéro de téléphone, avec messages, médias, appels audio et vidéo.">'
+          )
+          s = s.replace("</head>", '''  <link rel="canonical" href="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
+          <meta property="og:title" content="BIIC CHAT">
+          <meta property="og:description" content="BIIC CHAT — messagerie instantanée.">
+          <meta property="og:type" content="website">
+          <meta property="og:url" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
+          <meta property="og:image" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png">
+          <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT","applicationCategory":"CommunicationApplication","operatingSystem":"Android, Web","description":"BIIC CHAT — application de messagerie instantanée.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png"}
+          </script>
+          </head>''')
+          s = s.replace(
+              '<meta name="apple-mobile-web-app-title" content="biic_chat_sbr">',
+              '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">'
+          )
+          s = s.replace("<title>biic_chat_sbr</title>", "<title>BIIC CHAT</title>")
           p.write_text(s)
+
           m = Path("web/manifest.json")
           data = json.loads(m.read_text())
           data["name"] = "BIIC CHAT"
@@ -89,25 +106,36 @@ Sitemap: https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/sitemap.xml
           data["background_color"] = "#FFFFFF"
           data["theme_color"] = "#D71920"
           data["description"] = "BIIC CHAT — messagerie instantanée."
-          data["icons"] = [
-              {"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
-          ]
+          data["icons"] = [{"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]
           m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
           convert -background none assets/biic_logo.svg -resize 512x512 web/biic_logo.png
 
-      - name: Build Web
-        run: >
-          flutter build web --release
-          --base-href "/BIIC-CHAT-SBR/"
-          --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
-          --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}"
+      - name: Build Web release
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          flutter build web --release             --pwa-strategy=none             --base-href "/BIIC-CHAT-SBR/"             --dart-define=SUPABASE_URL="$SUPABASE_URL"             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+
+      - name: Verify Web release output
+        run: |
+          test -s build/web/index.html
+          test -s build/web/main.dart.js
+          test -s build/web/flutter_bootstrap.js
+          test -s build/web/biic_logo.svg
+          test -s build/web/biic_logo.png
+          test -s build/web/sitemap.xml
+          test -s build/web/robots.txt
+          grep -q 'BIIC CHAT' build/web/index.html
 
       - name: Publish gh-pages branch
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build/web
           publish_branch: gh-pages
           force_orphan: false
-          commit_message: "deploy: BIIC CHAT web release"
+          keep_files: false
+          commit_message: "deploy: BIIC CHAT web release ${{ github.sha }}"

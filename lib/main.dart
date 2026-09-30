@@ -1,10 +1,13 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:image_picker/image_picker.dart';
+
+import 'config/app_config.dart';
+import 'services/backend_service.dart';
 import 'services/device_access_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeBackend();
   runApp(const BIICChatApp());
 }
 
@@ -120,9 +123,8 @@ class _ChatHomePageState extends State<ChatHomePage> {
           itemCount: contacts.length,
           itemBuilder: (context, index) {
             final contact = contacts[index];
-            final phone = contact.phones.isEmpty
-                ? null
-                : contact.phones.first.number;
+            final phone =
+                contact.phones.isEmpty ? null : contact.phones.first.number;
             return ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person)),
               title: Text(contact.displayName),
@@ -137,7 +139,9 @@ class _ChatHomePageState extends State<ChatHomePage> {
                   ? null
                   : () {
                       Navigator.pop(context);
-                      _sendMessage('Contact : ${contact.displayName} - $phone');
+                      _sendMessage(
+                        'Contact : ${contact.displayName} - $phone',
+                      );
                     },
             );
           },
@@ -147,7 +151,8 @@ class _ChatHomePageState extends State<ChatHomePage> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

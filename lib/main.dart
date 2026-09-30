@@ -43,7 +43,7 @@ class AuthGate extends StatelessWidget {
       builder: (context, snapshot) {
         final session = snapshot.data?.session ?? auth.currentSession;
         if (session == null) return const AuthPage();
-        return const ChatHomePage();
+        return const MembersPage();
       },
     );
   }

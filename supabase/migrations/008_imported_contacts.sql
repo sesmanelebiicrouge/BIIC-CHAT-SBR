@@ -37,7 +37,7 @@ returns table (
 )
 language plpgsql
 security definer
-stable
+volatile
 set search_path = public
 as $$
 declare

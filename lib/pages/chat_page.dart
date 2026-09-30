@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
@@ -85,6 +86,16 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _shareContact() async {
+    if (kIsWeb) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Le partage de contacts de l’appareil est disponible sur Android/iOS.'),
+          ),
+        );
+      }
+      return;
+    }
     final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);
     if (permission != PermissionStatus.granted) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accès aux contacts refusé.')));

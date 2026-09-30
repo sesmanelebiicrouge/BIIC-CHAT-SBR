@@ -50,11 +50,11 @@ jobs:
           logo_dst.write_text(logo_src.read_text())
           sitemap = Path("web/sitemap.xml")
           sitemap.write_text("""<?xml version="1.0" encoding="UTF-8"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <sitemap><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc></sitemap>
-  <sitemap><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc></sitemap>
-  <sitemap><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc></sitemap>
-</sitemapindex>
+urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/</loc></url>
+  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/privacy.html</loc></url>
+  <url><loc>https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/terms.html</loc></url>
+</urlset>
 """)
           robots = Path("web/robots.txt")
           robots.write_text("""User-agent: *

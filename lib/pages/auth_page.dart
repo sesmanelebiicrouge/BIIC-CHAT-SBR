@@ -65,7 +65,11 @@ class _AuthPageState extends State<AuthPage> {
     if(!RegExp(r'^\d{6}$').hasMatch(code)){_message('Entrez le code SMS à 6 chiffres.');return;}
     setState(()=>_loading=true);
     try{
-      await _auth.verifyPhone(phone:_pendingPhone,token:code);
+      if (_mode == _AuthMode.verifyReset) {
+        await _auth.verifyPasswordResetCode(phone: _pendingPhone, token: code);
+      } else {
+        await _auth.verifyPhone(phone: _pendingPhone, token: code);
+      }
       if(_mode==_AuthMode.verifyReset){_password.clear();_confirmPassword.clear();setState(()=>_mode=_AuthMode.setNewPassword);_message('Numéro vérifié. Choisissez maintenant votre nouveau mot de passe.');}
       else{_message('Numéro vérifié. Bienvenue sur BIIC CHAT.');}
     }catch(e){_message('Code incorrect ou expiré : $e');}

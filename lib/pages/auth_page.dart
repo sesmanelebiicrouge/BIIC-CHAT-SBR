@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/auth_service.dart';
 import '../widgets/biic_brand.dart';
 
@@ -25,6 +26,11 @@ class _AuthPageState extends State<AuthPage> {
     if(raw.startsWith('+')) return raw;
     if(raw.startsWith('0')) return '+225${raw.substring(1)}';
     return '+225$raw';
+  }
+
+  Future<void> _openLegal(String page) async {
+    final uri = Uri.parse('https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/$page');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   void _message(String text){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(text)));}
@@ -122,6 +128,11 @@ class _AuthPageState extends State<AuthPage> {
         if(_mode==_AuthMode.signIn)TextButton(onPressed:_loading?null:()=>_switchMode(_AuthMode.forgotPassword),child:const Text('Mot de passe oublié ?')),
         if(_mode==_AuthMode.signIn||_mode==_AuthMode.register)TextButton(onPressed:_loading?null:()=>_switchMode(_isRegister?_AuthMode.signIn:_AuthMode.register),child:Text(_isRegister?'J’ai déjà un compte':'Créer un compte')),
         if(_mode==_AuthMode.forgotPassword||_mode==_AuthMode.setNewPassword)TextButton(onPressed:_loading?null:()=>_switchMode(_AuthMode.signIn),child:const Text('Retour à la connexion')),
+        const SizedBox(height:8),
+        Wrap(alignment:WrapAlignment.center,children:[
+          TextButton(onPressed:()=>_openLegal('privacy.html'),child:const Text('Confidentialité')),
+          TextButton(onPressed:()=>_openLegal('terms.html'),child:const Text('Conditions d’utilisation')),
+        ]),
       ]))))),
     ));
   }

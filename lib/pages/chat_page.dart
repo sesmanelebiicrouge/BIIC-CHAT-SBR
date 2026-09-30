@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/conversation_service.dart';
 import '../services/media_service.dart';
@@ -36,6 +37,57 @@ class _ChatPageState extends State<ChatPage> {
     if (file == null) return;
     await _upload(file.name, await file.readAsBytes(), file.mimeType ?? 'image/jpeg');
   }
+
+  Future<void> _pickMedia() async {
+    final file = await ImagePicker().pickMedia();
+    if (file == null) return;
+    await _upload(file.name, await file.readAsBytes(), file.mimeType ?? 'application/octet-stream');
+  }
+
+  Future<void> _shareContact() async {
+    final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);
+    if (permission != PermissionStatus.granted) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accès aux contacts refusé.')));
+      return;
+    }
+    final contacts = await FlutterContacts.getAll(properties: {ContactProperty.name, ContactProperty.phone});
+    if (!mounted || contacts.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aucun contact disponible.')));
+      return;
+    }
+    final contact = await showModalBottomSheet<Contact>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .7,
+          child: ListView.builder(
+            itemCount: contacts.length,
+            itemBuilder: (_, index) {
+              final item = contacts[index];
+              final name = item.displayName.isEmpty ? 'Contact' : item.displayName;
+              return ListTile(
+                leading: CircleAvatar(child: Text(name.substring(0, 1).toUpperCase())),
+                title: Text(name),
+                subtitle: Text(item.phones.isEmpty ? 'Aucun numéro' : item.phones.first.number),
+                onTap: () => Navigator.pop(context, item),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    if (contact == null) return;
+    final user = _service.client.auth.currentUser;
+    if (user == null) return;
+    final name = contact.displayName.isEmpty ? 'Contact' : contact.displayName;
+    final phone = contact.phones.isEmpty ? '' : contact.phones.first.number;
+    await _service.sendMessage(
+      conversationId: widget.conversationId,
+      senderId: user.id,
+      content: 'Contact : ' + name + (phone.isEmpty ? '' : ' • ' + phone),
+    );
+  }
   Future<void> _pickFile() async {
     final files = await FilePicker.pickFiles();
     if (files.isEmpty) return;
@@ -61,9 +113,10 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _attachments() async {
     if (_uploading) return;
     await showModalBottomSheet<void>(context: context, builder: (context) => SafeArea(child: Wrap(children: [
-      ListTile(leading: const Icon(Icons.photo_library), title: const Text('Galerie'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.gallery); }),
+      ListTile(leading: const Icon(Icons.photo_library), title: const Text('Photos et vidéos'), onTap: () { Navigator.pop(context); _pickMedia(); }),
       ListTile(leading: const Icon(Icons.photo_camera), title: const Text('Appareil photo'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.camera); }),
-      ListTile(leading: const Icon(Icons.attach_file), title: const Text('Fichier'), onTap: () { Navigator.pop(context); _pickFile(); }),
+      ListTile(leading: const Icon(Icons.attach_file), title: const Text('Fichier / document'), onTap: () { Navigator.pop(context); _pickFile(); }),
+      ListTile(leading: const Icon(Icons.contacts_outlined), title: const Text('Partager un contact'), onTap: () { Navigator.pop(context); _shareContact(); }),
     ])));
   }
   Future<String> _signed(String path) => _media.createSignedUrl(path);

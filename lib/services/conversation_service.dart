@@ -51,33 +51,16 @@ class ConversationService {
       throw ArgumentError('Membres invalides.');
     }
 
-    final existing = await _supabase
-        .from('conversation_members')
-        .select('conversation_id, conversations!inner(id, is_group)')
-        .eq('user_id', uid);
-
-    for (final row in List<Map<String, dynamic>>.from(existing)) {
-      final conversation = row['conversations'];
-      if (conversation is Map && conversation['is_group'] == false) {
-        final id = row['conversation_id'];
-        final members = await _supabase
-            .from('conversation_members')
-            .select('user_id')
-            .eq('conversation_id', id);
-        final ids = List<Map<String, dynamic>>.from(members)
-            .map((m) => m['user_id'])
-            .toSet();
-        if (ids.length == 2 && ids.contains(other) && ids.contains(uid)) {
-          return id as String;
-        }
-      }
-    }
-
-    return createConversation(
-      name: otherName.trim().isEmpty ? 'Conversation' : otherName.trim(),
-      createdBy: uid,
-      memberIds: [uid, other],
+    final response = await _supabase.rpc(
+      'get_or_create_direct_conversation',
+      params: {
+        'target_user': uid,
+        'other_user': other,
+        'other_name': otherName.trim(),
+      },
     );
+
+    return response.toString();
   }
 
   Future<List<Map<String, dynamic>>> getConversationMembers(

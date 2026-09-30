@@ -53,6 +53,26 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _email.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saisissez votre e-mail d’abord.')),
+      );
+      return;
+    }
+    try {
+      await _auth.resetPassword(email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Un e-mail de récupération a été demandé.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -108,6 +128,11 @@ class _AuthPageState extends State<AuthPage> {
                     ),
                   ),
                 ),
+                if (!_register)
+                  TextButton(
+                    onPressed: _loading ? null : _resetPassword,
+                    child: const Text('Mot de passe oublié ?'),
+                  ),
                 TextButton(
                   onPressed: _loading
                       ? null

@@ -40,6 +40,26 @@ jobs:
       - name: Test
         run: flutter test
 
+      - name: Prepare BIIC CHAT Web metadata
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("web/index.html")
+          s = p.read_text()
+          s = s.replace('<meta name="description" content="A new Flutter project.">', '<meta name="description" content="BIIC CHAT — messagerie instantanée.">')
+          s = s.replace('<meta name="apple-mobile-web-app-title" content="biic_chat_sbr">', '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">')
+          s = s.replace('<title>biic_chat_sbr</title>', '<title>BIIC CHAT</title>')
+          p.write_text(s)
+          m = Path("web/manifest.json")
+          ms = m.read_text()
+          ms = ms.replace('"name": "biic_chat_sbr"', '"name": "BIIC CHAT"')
+          ms = ms.replace('"short_name": "biic_chat_sbr"', '"short_name": "BIIC CHAT"')
+          ms = ms.replace('"background_color": "#0175C2"', '"background_color": "#FFFFFF"')
+          ms = ms.replace('"theme_color": "#0175C2"', '"theme_color": "#D71920"')
+          ms = ms.replace('"description": "A new Flutter project."', '"description": "BIIC CHAT — messagerie instantanée."')
+          m.write_text(ms)
+          PY
+
       - name: Build Web
         run: >
           flutter build web --release

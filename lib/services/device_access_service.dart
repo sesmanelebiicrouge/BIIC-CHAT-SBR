@@ -12,8 +12,7 @@ class DeviceAccessService {
   Future<XFile?> takePhoto() =>
       _imagePicker.pickImage(source: ImageSource.camera);
 
-  Future<FilePickerResult?> pickFiles() =>
-      FilePicker.platform.pickFiles(allowMultiple: true);
+  Future<List<PlatformFile>> pickFiles() => FilePicker.pickFiles();
 
   Future<List<Contact>> pickContacts() async {
     final permission =

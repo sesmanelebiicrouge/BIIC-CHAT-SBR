@@ -23,6 +23,16 @@ jobs:
       - name: Set application label
         run: sed -i 's/android:label="biic_chat_sbr"/android:label="BIIC CHAT"/' android/app/src/main/AndroidManifest.xml
 
+      - name: Verify Android 16 target configuration
+        run: |
+          test -f android/app/build.gradle.kts -o -f android/app/build.gradle
+          if grep -RqsE 'targetSdk[^0-9]*(36|flutter.targetSdkVersion)' android/app; then
+            echo "Android target configuration detected."
+          else
+            echo "Android target SDK 36 configuration was not detected."
+            exit 1
+          fi
+
       - name: Install dependencies
         run: flutter pub get
 

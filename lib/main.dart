@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 
-import 'config/app_config.dart';
-import 'services/backend_service.dart';
 import 'services/device_access_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeBackend();
   runApp(const BIICChatApp());
 }
 
@@ -92,15 +89,18 @@ class _ChatHomePageState extends State<ChatHomePage> {
         case _AttachmentAction.gallery:
           final file = await _deviceAccess.pickImageFromGallery();
           if (file != null) _sendMessage('Image sélectionnée : ${file.name}');
+          break;
         case _AttachmentAction.camera:
           final file = await _deviceAccess.takePhoto();
           if (file != null) _sendMessage('Photo prise : ${file.name}');
+          break;
         case _AttachmentAction.file:
           final result = await _deviceAccess.pickFiles();
           if (result != null) {
             final names = result.files.map((file) => file.name).join(', ');
             _sendMessage('Fichier(s) : $names');
           }
+          break;
         case _AttachmentAction.contacts:
           final contacts = await _deviceAccess.pickContacts();
           if (contacts.isEmpty) {
@@ -108,6 +108,7 @@ class _ChatHomePageState extends State<ChatHomePage> {
           } else if (mounted) {
             await _showContacts(contacts);
           }
+          break;
       }
     } catch (error) {
       if (mounted) _showMessage(error.toString());

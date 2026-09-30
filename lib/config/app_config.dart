@@ -5,9 +5,8 @@ class AppConfig {
   static const supabaseAnonKey =
       String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  static String get supabaseKey => supabasePublishableKey.isNotEmpty
-      ? supabasePublishableKey
-      : supabaseAnonKey;
+  static String get supabaseKey =>
+      supabasePublishableKey.isNotEmpty ? supabasePublishableKey : supabaseAnonKey;
 
   static bool get hasSupabaseConfig =>
       supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;

@@ -129,7 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(leading:const Icon(Icons.qr_code_2),title:const Text('Double authentification'),subtitle:const Text('Configurer un QR code avec une application Authenticator'),onTap:_loading?null:_setup2FA),
       const Padding(padding:EdgeInsets.all(16),child:Text('Pour une connexion sur ordinateur par QR comme WhatsApp Web, il faudra ensuite un système dédié d’appareils liés. Le QR ci-dessus est destiné à la double authentification.',style:TextStyle(color:Color(0xFF777777)))),
       const Divider(),
-      const ListTile(title:Text('Compte',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+      const ListTile(title:Text('Compte et données',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
       ListTile(leading:const Icon(Icons.delete_forever_outlined,color:Colors.red),title:const Text('Supprimer mon compte'),subtitle:const Text('Supprimer définitivement votre compte et ses données'),onTap:_loading?null:_deleteAccount),
       const Center(child:BiicBrand(iconSize:54,showSubtitle:false)),
     ]));

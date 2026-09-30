@@ -20,6 +20,38 @@ class _MembersPageState extends State<MembersPage> {
   @override void initState() { super.initState(); _future = _service.getMembers(); }
   void _reload() => setState(() => _future = _service.getMembers());
 
+  Future<void> _createGroup() async {
+    final me = _conversation.client.auth.currentUser;
+    if (me == null) return;
+    final members = await _future;
+    final selected = <String>{};
+    final nameController = TextEditingController();
+    if (!mounted) return;
+    final ok = await showDialog<bool>(context: context, builder: (dialog) => StatefulBuilder(
+      builder: (context, setDialog) => AlertDialog(
+        title: const Text('Nouveau groupe'),
+        content: SizedBox(width: 420, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(controller: nameController, maxLength: 60, decoration: const InputDecoration(labelText: 'Nom du groupe')),
+          ...members.where((m) => m['id'] != me.id).map((m) {
+            final id = m['id'] as String;
+            final label = (m['display_name'] as String?)?.trim().isNotEmpty == true ? m['display_name'] as String : m['email'] as String? ?? id;
+            return CheckboxListTile(value: selected.contains(id), onChanged: (v) => setDialog(() { v == true ? selected.add(id) : selected.remove(id); }), title: Text(label));
+          }),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialog, nameController.text.trim().isNotEmpty && selected.isNotEmpty), child: const Text('Créer')),
+        ],
+      ),
+    ));
+    if (ok != true) { nameController.dispose(); return; }
+    try {
+      final id = await _conversation.createConversation(name: nameController.text, createdBy: me.id, memberIds: [me.id, ...selected], isGroup: true);
+      if (mounted) Navigator.of(context).push(MaterialPageRoute(builder: (_) => ChatPage(conversationId: id, title: nameController.text.trim())));
+    } catch (e) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()))); }
+    nameController.dispose();
+  }
+
   Future<void> _manageMember(Map<String, dynamic> member) async {
     final id = member['id'] as String?;
     if (id == null) return;
@@ -75,6 +107,7 @@ class _MembersPageState extends State<MembersPage> {
       appBar: AppBar(
         title: const Text('BIIC CHAT'),
         actions: [
+          IconButton(onPressed: _createGroup, icon: const Icon(Icons.group_add), tooltip: 'Créer un groupe'),
           IconButton(onPressed: _reload, icon: const Icon(Icons.refresh), tooltip: 'Actualiser'),
           IconButton(onPressed: () => AuthService().signOut(), icon: const Icon(Icons.logout), tooltip: 'Déconnexion'),
         ],

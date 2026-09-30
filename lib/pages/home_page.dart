@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../services/conversation_service.dart';
 import 'members_page.dart';
 import 'chat_page.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -13,6 +14,7 @@ class HomePage extends StatelessWidget {
     if (user == null) return const MembersPage();
     return Scaffold(
       appBar: AppBar(title: const Text('BIIC CHAT'), actions: [
+        IconButton(tooltip:'Mon profil', onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ProfilePage())), icon:const Icon(Icons.account_circle_outlined)),
         IconButton(tooltip:'Nouveau chat', onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())), icon:const Icon(Icons.person_add_alt_1)),
         IconButton(tooltip:'Déconnexion', onPressed:()=>AuthService().signOut(), icon:const Icon(Icons.logout)),
       ]),

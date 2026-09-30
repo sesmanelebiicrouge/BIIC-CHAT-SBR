@@ -45,7 +45,7 @@ class HomePage extends StatelessWidget {
                 builder:(context,membersSnapshot){
                   final rows=membersSnapshot.data??const [];
                   final names=rows.where((r)=>r['user_id']!=user.id).map((r)=>(r['display_name'] as String? ?? '').trim()).where((n)=>n.isNotEmpty).toList();
-                  final title=(c['name'] as String???'').trim().isNotEmpty?c['name'] as String:(names.isNotEmpty?names.join(', '):'Conversation');
+                  final title=(c['name'] as String? ?? '').trim().isNotEmpty?c['name'] as String:(names.isNotEmpty?names.join(', '):'Conversation');
                   return ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:7),leading:BiicAvatar(label:title,radius:27),title:Text(title,style:const TextStyle(fontWeight:FontWeight.w700)),subtitle:Text(c['is_group']==true?'Groupe':'Discussion privée'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>ChatPage(conversationId:c['id'] as String,title:title))));
                 },
               );

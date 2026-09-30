@@ -130,14 +130,16 @@ class ConversationService {
     required List<String> messageIds,
   }) async {
     final uid = userId.trim();
+    final conversation = conversationId.trim();
     final ids = messageIds.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
-    if (uid.isEmpty || ids.isEmpty) return;
+    if (uid.isEmpty || conversation.isEmpty || ids.isEmpty) return;
 
     await _supabase.from('message_reads').upsert(
       ids
           .map((messageId) => {
                 'message_id': messageId,
                 'user_id': uid,
+                'conversation_id': conversation,
               })
           .toList(),
       onConflict: 'message_id,user_id',

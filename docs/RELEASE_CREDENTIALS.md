@@ -62,12 +62,12 @@ Pour activer la publication TestFlight, configurer dans GitHub Actions :
 - `APPSTORE_CERTIFICATES_FILE_BASE64` — certificat de distribution Apple au format P12 encodé en Base64
 - `APPSTORE_CERTIFICATES_PASSWORD` — mot de passe du P12
 
-Le Bundle ID utilisé est `com.biicchat.biic_chat_sbr`. L'application doit d'abord être créée dans App Store Connect avec ce même identifiant. Apple exige actuellement que les apps envoyées sur App Store Connect soient construites avec Xcode 26 ou ultérieur et le SDK iOS 26 ou ultérieur. citeturn0search1
+Le Bundle ID utilisé est `com.biicchat.biic_chat_sbr`. L'application doit d'abord être créée dans App Store Connect avec ce même identifiant. Apple exige actuellement que les apps envoyées sur App Store Connect soient construites avec Xcode 26 ou ultérieur et le SDK iOS 26 ou ultérieur.
 
-Le workflow ne contient aucune clé privée Apple ou certificat : ces éléments restent dans GitHub Actions Secrets. L'envoi TestFlight utilise l'API App Store Connect. citeturn3search0turn3search1
+Le workflow ne contient aucune clé privée Apple ou certificat : ces éléments restent dans GitHub Actions Secrets. L'envoi TestFlight utilise l'API App Store Connect.
 
 ## Validation Supabase avant publication
 
 Les workflows Web, Android et iOS vérifient désormais que `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY` ne sont pas seulement présents : ils testent également l'authentification auprès du projet Supabase avant de produire/publier une release. Cela évite de mettre en ligne une build qui retourne `401 Invalid API key`.
 
-Une clé client doit être une clé publishable (ou l'ancienne clé `anon` pendant la migration), jamais une clé `secret`/`service_role`. Supabase indique que les clés publishable sont destinées aux applications Web et mobiles. citeturn0search2turn0search3
+Une clé client doit être une clé publishable (ou l'ancienne clé `anon` pendant la migration), jamais une clé `secret`/`service_role`. Supabase indique que les clés publishable sont destinées aux applications Web et mobiles.

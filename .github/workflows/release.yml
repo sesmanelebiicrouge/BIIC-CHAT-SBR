@@ -2,6 +2,9 @@ name: Release BIIC CHAT
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   android-release:
@@ -103,6 +106,19 @@ jobs:
         with:
           name: biic-chat-android-aab
           path: build/app/outputs/bundle/release/app-release.aab
+
+      - name: Publish Android to Google Play internal testing
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        if: env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != ''
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.biicchat.biic_chat_sbr
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          tracks: internal
+          status: completed
+          changesNotSentForReview: true
 
   web-release:
     name: Web release

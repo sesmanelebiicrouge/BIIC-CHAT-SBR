@@ -62,6 +62,7 @@ jobs:
             fi
           done
           test -n "$selected_key" || (echo "::error::No valid Supabase public API key was found in SUPABASE_PUBLISHABLE_KEY, SUPABASE_ANON_KEY or SUPABASE_KEY." && cat /tmp/supabase-auth-settings.json && exit 1)
+          echo "SUPABASE_URL=$SUPABASE_URL" >> "$GITHUB_ENV"
           echo "SUPABASE_PUBLISHABLE_KEY=$selected_key" >> "$GITHUB_ENV"
           echo "Supabase URL + publishable key validated successfully (HTTP 200)."
 
@@ -71,8 +72,6 @@ jobs:
           sudo apt-get install -y librsvg2-bin
 
       - name: Prepare BIIC CHAT Web metadata
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -135,13 +134,12 @@ jobs:
           rsvg-convert -w 512 -h 512 -o web/biic_logo.png assets/biic_logo.svg
 
       - name: Build Web release
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          flutter build web --release             --pwa-strategy=none             --base-href "/BIIC-CHAT-SBR/"             --dart-define=SUPABASE_URL="$SUPABASE_URL"             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+          flutter build web --release \
+            --pwa-strategy=none \
+            --base-href "/BIIC-CHAT-SBR/" \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
 
       - name: Verify Web release output
         run: |

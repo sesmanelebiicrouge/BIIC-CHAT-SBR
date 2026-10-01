@@ -51,8 +51,8 @@ jobs:
           # Verify the credentials actually authenticate against the Supabase project.
           # Checking only that the secrets are non-empty is not enough: a stale key or
           # a key belonging to another project can still produce HTTP 401 in production.
-          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \\
-            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \\
+          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             "$SUPABASE_URL/auth/v1/settings")
           if [ "$code" != "200" ]; then
             echo "::error::Supabase credentials rejected by $SUPABASE_URL (HTTP $code). Check that SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY belong to the same project and that the key is a publishable/anon key, not a secret/service_role key."

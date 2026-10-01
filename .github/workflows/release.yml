@@ -97,8 +97,8 @@ jobs:
         run: |
           test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL secret" && exit 1)
           test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing SUPABASE_PUBLISHABLE_KEY secret" && exit 1)
-          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \\
-            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \\
+          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             "$SUPABASE_URL/auth/v1/settings")
           if [ "$code" != "200" ]; then
             echo "::error::Supabase credentials rejected by $SUPABASE_URL (HTTP $code). Check that SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY belong to the same project and that the key is a publishable/anon key, not a secret/service_role key."
@@ -155,8 +155,8 @@ jobs:
         run: |
           test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL secret" && exit 1)
           test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing SUPABASE_PUBLISHABLE_KEY secret" && exit 1)
-          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \\
-            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \\
+          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
+            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             "$SUPABASE_URL/auth/v1/settings")
           if [ "$code" != "200" ]; then
             echo "::error::Supabase credentials rejected by $SUPABASE_URL (HTTP $code)."

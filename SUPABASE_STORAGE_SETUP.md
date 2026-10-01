@@ -4,7 +4,7 @@ BIIC CHAT contains private user content. Do not make chat or profile storage buc
 
 ## Database
 
-Run all migrations in order, through `supabase/migrations/012_atomic_direct_conversations.sql` using Supabase migrations or the SQL editor.
+Run all migrations in order, through `supabase/migrations/013_production_reliability.sql` using Supabase migrations or the SQL editor.
 
 ## Storage
 

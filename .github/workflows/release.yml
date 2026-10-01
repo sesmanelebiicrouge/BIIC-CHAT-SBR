@@ -94,9 +94,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL secret" && exit 1)
-          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing SUPABASE_PUBLISHABLE_KEY secret" && exit 1)
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then SUPABASE_PUBLISHABLE_KEY="$SUPABASE_ANON_KEY"; fi
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY"; fi
+          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing Supabase public API key secret" && exit 1)
           code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
             -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             "$SUPABASE_URL/auth/v1/settings")
@@ -152,9 +156,13 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL secret" && exit 1)
-          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing SUPABASE_PUBLISHABLE_KEY secret" && exit 1)
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then SUPABASE_PUBLISHABLE_KEY="$SUPABASE_ANON_KEY"; fi
+          if [ -z "$SUPABASE_PUBLISHABLE_KEY" ]; then SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY"; fi
+          test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "Missing Supabase public API key secret" && exit 1)
           code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
             -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             "$SUPABASE_URL/auth/v1/settings")

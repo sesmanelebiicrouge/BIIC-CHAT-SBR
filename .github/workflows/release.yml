@@ -96,10 +96,13 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_URL_VAR: ${{ vars.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY_VAR: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL secret" && exit 1)
+          if [ -z "$SUPABASE_URL" ]; then SUPABASE_URL="$SUPABASE_URL_VAR"; fi
+          test -n "$SUPABASE_URL" || (echo "Missing Supabase project URL" && exit 1)
           selected_key=""
-          for candidate in "$SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_ANON_KEY" "$SUPABASE_KEY"; do
+          for candidate in "$SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_ANON_KEY" "$SUPABASE_KEY" "$SUPABASE_PUBLISHABLE_KEY_VAR"; do
             if [ -n "$candidate" ]; then
               code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" -H "apikey: $candidate" "$SUPABASE_URL/auth/v1/settings")
               if [ "$code" = "200" ]; then selected_key="$candidate"; break; fi

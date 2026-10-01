@@ -76,7 +76,6 @@ jobs:
         run: |
           test -n "$SUPABASE_URL" || (echo "::error::Missing SUPABASE_URL secret" && exit 1)
           test -n "$SUPABASE_PUBLISHABLE_KEY" || (echo "::error::Missing SUPABASE_PUBLISHABLE_KEY secret" && exit 1)
-          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}"             -H "apikey: $SUPABASE_PUBLISHABLE_KEY"             -H "Authorization: Bearer $SUPABASE_PUBLISHABLE_KEY"             "$SUPABASE_URL/auth/v1/settings")
           if [ "$code" != "200" ]; then
             echo "::error::Supabase credentials rejected by $SUPABASE_URL (HTTP $code)."
             cat /tmp/supabase-auth-settings.json

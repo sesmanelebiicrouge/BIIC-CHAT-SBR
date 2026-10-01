@@ -43,7 +43,7 @@ class _AuthPageState extends State<AuthPage> {
     if(_mode==_AuthMode.forgotPassword){
       setState(()=>_loading=true);
       try{await _auth.requestPasswordReset(phone);_pendingPhone=phone;_otp.clear();setState(()=>_mode=_AuthMode.verifyReset);_message('Le code de validation a été envoyé par SMS.');}
-      catch(e){_message('Impossible d’envoyer le code : $e');}
+      catch(e){_message(AuthService.readableError(e));}
       finally{if(mounted)setState(()=>_loading=false);}
       return;
     }
@@ -56,7 +56,7 @@ class _AuthPageState extends State<AuthPage> {
         await _auth.signUp(phone:phone,password:_password.text,displayName:_name.text);
         _pendingPhone=phone;_otp.clear();setState(()=>_mode=_AuthMode.verifySignup);_message('Un code à 6 chiffres a été envoyé par SMS.');
       }else{await _auth.signIn(phone:phone,password:_password.text);}
-    }catch(e){_message('Connexion impossible : $e');}
+    }catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
 
@@ -72,7 +72,7 @@ class _AuthPageState extends State<AuthPage> {
       }
       if(_mode==_AuthMode.verifyReset){_password.clear();_confirmPassword.clear();setState(()=>_mode=_AuthMode.setNewPassword);_message('Numéro vérifié. Choisissez maintenant votre nouveau mot de passe.');}
       else{_message('Numéro vérifié. Bienvenue sur BIIC CHAT.');}
-    }catch(e){_message('Code incorrect ou expiré : $e');}
+    }catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
 
@@ -80,7 +80,7 @@ class _AuthPageState extends State<AuthPage> {
     if(_password.text.length<6||_password.text!=_confirmPassword.text){_message('Choisissez un mot de passe d’au moins 6 caractères et confirmez-le.');return;}
     setState(()=>_loading=true);
     try{await _auth.updatePassword(_password.text);_message('Mot de passe modifié. Vous êtes connecté.');}
-    catch(e){_message('Impossible de modifier le mot de passe : $e');}
+    catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
 
@@ -88,7 +88,7 @@ class _AuthPageState extends State<AuthPage> {
     if(_pendingPhone.isEmpty)return;
     setState(()=>_loading=true);
     try{await _auth.resendPhoneCode(_pendingPhone);_message('Un nouveau code a été envoyé.');}
-    catch(e){_message('Impossible de renvoyer le code : $e');}
+    catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
 

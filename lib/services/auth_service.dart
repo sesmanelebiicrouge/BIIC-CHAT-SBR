@@ -238,6 +238,14 @@ class AuthServiceException implements Exception {
     final code = e.code.toLowerCase();
     final raw = e.message.toLowerCase();
 
+    if (code == 'phone_provider_disabled' ||
+        raw.contains('phone signups are disabled')) {
+      return const AuthServiceException(
+        'La création de compte par téléphone est désactivée sur le serveur. Le service SMS doit être activé dans Supabase avant de pouvoir créer un compte avec un numéro.',
+        'phone_provider_disabled',
+      );
+    }
+
     if (code.contains('sms') ||
         raw.contains('sms') ||
         raw.contains('phone provider') ||

@@ -134,33 +134,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: |
-                    selected_key=""
-          for candidate in "$SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_ANON_KEY" "$SUPABASE_KEY"; do
-            if [ -n "$candidate" ]; then
-              code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" -H "apikey: $candidate" "$SUPABASE_URL/auth/v1/settings")
-              if [ "$code" = "200" ]; then selected_key="$candidate"; break; fi
-            fi
-          done
-          test -n "$selected_key" || (echo "No valid Supabase public API key secret found" && exit 1)
-          SUPABASE_PUBLISHABLE_KEY="$selected_key"
-          export SUPABASE_PUBLISHABLE_KEY
-          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
-            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
-            "$SUPABASE_URL/auth/v1/settings")
-          if [ "$code" != "200" ]; then
-            echo "::error::Supabase credentials rejected by $SUPABASE_URL (HTTP $code)."
-            cat /tmp/supabase-auth-settings.json
-            exit 1
-          fi
-          flutter build web --release \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+        run: flutter build web --release --pwa-strategy=none --base-href "/BIIC-CHAT-SBR/"
 
       - name: Upload Web
         uses: actions/upload-artifact@v4

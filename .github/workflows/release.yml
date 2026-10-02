@@ -91,37 +91,9 @@ jobs:
           printf '%s' "$ANDROID_KEY_PROPERTIES" > android/key.properties
 
       - name: Build signed Android App Bundle
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SUPABASE_URL_VAR: ${{ vars.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY_VAR: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          if [ -z "$SUPABASE_URL" ]; then SUPABASE_URL="$SUPABASE_URL_VAR"; fi
-                    selected_key=""
-          for candidate in "$SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_ANON_KEY" "$SUPABASE_KEY" "$SUPABASE_PUBLISHABLE_KEY_VAR"; do
-            if [ -n "$candidate" ]; then
-              code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" -H "apikey: $candidate" "$SUPABASE_URL/auth/v1/settings")
-              if [ "$code" = "200" ]; then selected_key="$candidate"; break; fi
-            fi
-          done
-          test -n "$selected_key" || (echo "No valid Supabase public API key secret found" && exit 1)
-          SUPABASE_PUBLISHABLE_KEY="$selected_key"
-          export SUPABASE_PUBLISHABLE_KEY
-          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
-            -H "apikey: $SUPABASE_PUBLISHABLE_KEY" \
-            "$SUPABASE_URL/auth/v1/settings")
-          if [ "$code" != "200" ]; then
-            echo "::error::Supabase credentials rejected by $SUPABASE_URL (HTTP $code). Check that SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY belong to the same project and that the key is a publishable/anon key, not a secret/service_role key."
-            cat /tmp/supabase-auth-settings.json
-            exit 1
-          fi
-          echo "Supabase credentials validated successfully (HTTP 200)."
-          flutter build appbundle --release \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+          flutter build appbundle --release
+
 
       - name: Upload Android AAB
         uses: actions/upload-artifact@v4

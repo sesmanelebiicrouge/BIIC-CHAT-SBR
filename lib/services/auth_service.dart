@@ -59,13 +59,13 @@ class AuthService {
     }
   }
 
-  Future<AuthResponse> verifyPhone({
+  Future<AuthResponse> verifySignupCode({
     required String phone,
     required String token,
   }) async {
     try {
       return await _client.auth.verifyOTP(
-        type: OtpType.sms,
+        type: OtpType.signup,
         phone: phone.trim(),
         token: token.trim(),
       );
@@ -73,24 +73,24 @@ class AuthService {
       throw AuthServiceException.fromAuthException(e);
     } catch (e) {
       throw const AuthServiceException(
-        'Vérification impossible pour le moment. Réessayez.',
-        'verify_error',
+        'Vérification du compte impossible pour le moment. Réessayez.',
+        'verify_signup_error',
       );
     }
   }
 
-  Future<void> resendPhoneCode(String phone) async {
+  Future<void> resendSignupCode(String phone) async {
     try {
-      await _client.auth.signInWithOtp(
+      await _client.auth.resend(
+        type: OtpType.signup,
         phone: phone.trim(),
-        shouldCreateUser: false,
       );
     } on AuthException catch (e) {
       throw AuthServiceException.fromAuthException(e);
     } catch (e) {
       throw const AuthServiceException(
-        'Impossible de renvoyer le code. Réessayez.',
-        'resend_error',
+        'Impossible de renvoyer le code. Attendez quelques instants puis réessayez.',
+        'resend_signup_error',
       );
     }
   }

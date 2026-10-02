@@ -217,6 +217,44 @@ class AuthService {
     }
   }
 
+
+  static String readableError(Object error) {
+    final message = error.toString();
+    final lower = message.toLowerCase();
+    if (lower.contains('phone_provider_disabled') ||
+        lower.contains('phone signups are disabled')) {
+      return 'La création de compte par téléphone est momentanément désactivée sur le serveur. '
+          'Le service SMS doit être activé dans la configuration Supabase avant de pouvoir recevoir le code.';
+    }
+    if (lower.contains('invalid login credentials')) {
+      return 'Numéro ou mot de passe incorrect.';
+    }
+    if (lower.contains('user already registered') ||
+        lower.contains('already registered')) {
+      return 'Ce numéro possède déjà un compte. Utilisez « J’ai déjà un compte ».';
+    }
+    if (lower.contains('invalid phone number')) {
+      return 'Le numéro de téléphone est invalide. Utilisez un numéro ivoirien valide.';
+    }
+    if (lower.contains('otp') && lower.contains('expired')) {
+      return 'Le code SMS a expiré. Demandez un nouveau code.';
+    }
+    if (lower.contains('invalid') && lower.contains('otp')) {
+      return 'Le code SMS est incorrect. Vérifiez les 6 chiffres reçus.';
+    }
+    if (lower.contains('rate limit') || lower.contains('too many')) {
+      return 'Trop de tentatives. Attendez quelques minutes avant de réessayer.';
+    }
+    if (lower.contains('network') || lower.contains('socket') ||
+        lower.contains('connection')) {
+      return 'Connexion réseau impossible. Vérifiez Internet puis réessayez.';
+    }
+    if (error is AuthException && error.message.trim().isNotEmpty) {
+      return error.message.trim();
+    }
+    return 'Une erreur est survenue. Réessayez dans quelques instants.';
+  }
+
   Future<void> signOut() => _client.auth.signOut();
 
   static String readableError(Object error) {

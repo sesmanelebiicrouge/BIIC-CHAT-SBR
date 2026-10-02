@@ -28,6 +28,13 @@ class _AuthPageState extends State<AuthPage> {
     return '+225$raw';
   }
 
+  bool _isValidIvorianPhone(String phone) {
+    if (!phone.startsWith('+225') || phone.length != 14) return false;
+    final national = phone.substring(4);
+    final prefixOk = national.startsWith('01') || national.startsWith('05') || national.startsWith('07');
+    return prefixOk && int.tryParse(national.substring(2)) != null;
+  }
+
   Future<void> _openLegal(String page) async {
     final uri = Uri.parse('https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/$page');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -39,7 +46,7 @@ class _AuthPageState extends State<AuthPage> {
     if(_isVerify){await _verifyCode();return;}
     if(_mode==_AuthMode.setNewPassword){await _saveNewPassword();return;}
     final phone=_normalizePhone(_phone.text);
-    if(phone.length<10){_message('Entrez un numéro de téléphone valide.');return;}
+    if(!_isValidIvorianPhone(phone)){_message('Entrez un numéro ivoirien valide, par exemple 07 00 00 00 00.');return;}
     if(_mode==_AuthMode.forgotPassword){
       setState(()=>_loading=true);
       try{await _auth.requestPasswordReset(phone);_pendingPhone=phone;_otp.clear();setState(()=>_mode=_AuthMode.verifyReset);_message('Le code de validation a été envoyé par SMS.');}

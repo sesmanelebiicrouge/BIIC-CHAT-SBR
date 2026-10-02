@@ -18,12 +18,6 @@ Future<void> main() async {
 class BIICChatApp extends StatelessWidget {
   const BIICChatApp({super.key});
   @override
-  void dispose() {
-    _navigationTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     const red = Color(0xFFD71920);
     return MaterialApp(
@@ -69,6 +63,12 @@ class _BIICSplashGateState extends State<BIICSplashGate> {
         ),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _navigationTimer?.cancel();
+    super.dispose();
   }
 
   @override

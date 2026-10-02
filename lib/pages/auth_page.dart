@@ -30,7 +30,10 @@ class _AuthPageState extends State<AuthPage> {
 
   bool _isValidIvorianPhone(String phone) => RegExp(r'^\+225(01|05|07)\d{8}$').hasMatch(phone);
 
+  Future<void> _openLegal(String page) async {
+    final uri = Uri.parse('https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/$page');
     await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
   }
 
   void _message(String text){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(text)));}

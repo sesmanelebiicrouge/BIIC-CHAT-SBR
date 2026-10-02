@@ -47,6 +47,20 @@ jobs:
           echo "The publishable key is bundled via AppConfig; no CI secret is required."
 
 
+      - name: Smoke-test production Supabase endpoint
+        run: |
+          SUPABASE_URL='https://ktiawqonbjhzzghksngr.supabase.co'
+          SUPABASE_KEY='sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB'
+          code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" \
+            -H "apikey: $SUPABASE_KEY" \
+            "$SUPABASE_URL/auth/v1/settings")
+          if [ "$code" != "200" ]; then
+            echo "::error::The configured Supabase project rejected the publishable key (HTTP $code)."
+            cat /tmp/supabase-auth-settings.json
+            exit 1
+          fi
+          echo "Supabase production endpoint is reachable and accepted the publishable key."
+
       - name: Install SVG conversion tool
         run: |
           sudo apt-get update

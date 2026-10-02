@@ -236,7 +236,7 @@ class AuthServiceException implements Exception {
   const AuthServiceException(this.message, this.code);
 
   factory AuthServiceException.fromAuthException(AuthException e) {
-    final code = e.code.toLowerCase();
+    final code = (e.code ?? '').toLowerCase();
     final raw = e.message.toLowerCase();
 
     if (code == 'phone_provider_disabled' ||
@@ -307,7 +307,7 @@ class AuthServiceException implements Exception {
 
     return AuthServiceException(
       'Opération refusée par le serveur. Réessayez ou vérifiez les informations saisies.',
-      e.code.isEmpty ? 'auth_error' : e.code,
+      (e.code ?? '').isEmpty ? 'auth_error' : (e.code ?? 'auth_error'),
     );
   }
 

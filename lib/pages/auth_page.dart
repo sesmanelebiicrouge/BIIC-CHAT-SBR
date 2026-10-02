@@ -56,12 +56,14 @@ class _AuthPageState extends State<AuthPage> {
     }
     if(_password.text.length<6){_message('Le mot de passe doit contenir au moins 6 caractères.');return;}
     if(_isRegister&&_password.text!=_confirmPassword.text){_message('Les deux mots de passe ne correspondent pas.');return;}
-    if(_isRegister&&_name.text.trim().isEmpty){_message('Entrez votre nom.');return;}
+    if(_isRegister&&(_name.text.trim().length<2||_name.text.trim().length>60)){_message('Le nom doit contenir entre 2 et 60 caractères.');return;}
     setState(()=>_loading=true);
     try{
       if(_isRegister){
-        await _auth.signUp(phone:phone,password:_password.text,displayName:_name.text);
-        _pendingPhone=phone;_otp.clear();setState(()=>_mode=_AuthMode.verifySignup);_message('Un code à 6 chiffres a été envoyé par SMS.');
+        final response = await _auth.signUp(phone:phone,password:_password.text,displayName:_name.text);
+        if(!mounted)return;
+        if(response.session!=null){_message('Compte créé. Bienvenue sur BIIC CHAT.');}
+        else{_pendingPhone=phone;_otp.clear();setState(()=>_mode=_AuthMode.verifySignup);_message('Un code à 6 chiffres a été envoyé par SMS.');}
       }else{await _auth.signIn(phone:phone,password:_password.text);}
     }catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
@@ -75,7 +77,7 @@ class _AuthPageState extends State<AuthPage> {
       if (_mode == _AuthMode.verifyReset) {
         await _auth.verifyPasswordResetCode(phone: _pendingPhone, token: code);
       } else {
-        await _auth.verifyPhone(phone: _pendingPhone, token: code);
+        await _auth.verifySignupCode(phone: _pendingPhone, token: code);
       }
       if(_mode==_AuthMode.verifyReset){_password.clear();_confirmPassword.clear();setState(()=>_mode=_AuthMode.setNewPassword);_message('Numéro vérifié. Choisissez maintenant votre nouveau mot de passe.');}
       else{_message('Numéro vérifié. Bienvenue sur BIIC CHAT.');}
@@ -94,7 +96,7 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _resendCode() async {
     if(_pendingPhone.isEmpty)return;
     setState(()=>_loading=true);
-    try{await _auth.resendPhoneCode(_pendingPhone);_message('Un nouveau code a été envoyé.');}
+    try{await _auth.resendSignupCode(_pendingPhone);_message('Un nouveau code a été envoyé.');}
     catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }

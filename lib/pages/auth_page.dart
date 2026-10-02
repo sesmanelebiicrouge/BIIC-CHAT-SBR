@@ -28,7 +28,12 @@ class _AuthPageState extends State<AuthPage> {
     return '+225$raw';
   }
 
-  bool _isValidIvorianPhone(String phone) => RegExp(r'^\+225(01|05|07)\d{8}
+  bool _isValidIvorianPhone(String phone) {
+    if (!phone.startsWith('+225') || phone.length != 14) return false;
+    final national = phone.substring(4);
+    final prefixOk = national.startsWith('01') || national.startsWith('05') || national.startsWith('07');
+    return prefixOk && int.tryParse(national.substring(2)) != null;
+  }
 
   Future<void> _openLegal(String page) async {
     final uri = Uri.parse('https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/$page');

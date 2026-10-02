@@ -1,12 +1,11 @@
 class AppConfig {
-  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const supabasePublishableKey =
-      String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
-  static const supabaseAnonKey =
-      String.fromEnvironment('SUPABASE_ANON_KEY');
+  // Public Supabase client configuration for BIIC CHAT.
+  // Publishable keys are intended for browser/mobile clients; RLS protects the data.
+  static const supabaseUrl = 'https://ktiawqonbjhzzghksngr.supabase.co';
+  static const supabasePublishableKey = 'sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB';
+  static const supabaseAnonKey = '';
 
-  static String get supabaseKey =>
-      supabasePublishableKey.isNotEmpty ? supabasePublishableKey : supabaseAnonKey;
+  static String get supabaseKey => supabasePublishableKey;
 
   static bool get hasSupabaseConfig =>
       supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty;

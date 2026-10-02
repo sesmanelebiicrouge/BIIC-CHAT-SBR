@@ -35,6 +35,7 @@ class AuthService {
       final response = await _client.auth.signUp(
         phone: phone.trim(),
         password: password,
+        channel: OtpChannel.sms,
         data: {'display_name': displayName.trim()},
       );
 

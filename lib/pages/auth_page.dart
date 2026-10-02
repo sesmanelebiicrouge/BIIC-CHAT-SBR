@@ -28,8 +28,8 @@ class _AuthPageState extends State<AuthPage> {
     return '+225$raw';
   }
 
-  bool _isValidIvorianPhone(String phone) => RegExp(r'^\\+225(01|05|07)\\d{8}(String page) async {
-    final uri = Uri.parse('https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/$page');
+  bool _isValidIvorianPhone(String phone) => RegExp(r'^\+225(01|05|07)\d{8}$').hasMatch(phone);
+
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 

@@ -118,9 +118,7 @@ jobs:
         run: |
           flutter build web --release \
             --pwa-strategy=none \
-            --base-href "/BIIC-CHAT-SBR/" \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY"
+            --base-href "/BIIC-CHAT-SBR/"
 
       - name: Verify Web release output
         run: |

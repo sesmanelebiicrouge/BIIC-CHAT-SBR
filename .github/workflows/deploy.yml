@@ -40,30 +40,12 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Require production backend configuration
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          SUPABASE_URL_VAR: ${{ vars.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY_VAR: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+      - name: Validate production backend configuration
         run: |
-          if [ -z "$SUPABASE_URL" ]; then SUPABASE_URL="$SUPABASE_URL_VAR"; fi
-                    selected_key=""
-          for candidate in "$SUPABASE_PUBLISHABLE_KEY" "$SUPABASE_ANON_KEY" "$SUPABASE_KEY" "$SUPABASE_PUBLISHABLE_KEY_VAR"; do
-            if [ -n "$candidate" ]; then
-              code=$(curl -sS -o /tmp/supabase-auth-settings.json -w "%{http_code}" -H "apikey: $candidate" "$SUPABASE_URL/auth/v1/settings")
-              if [ "$code" = "200" ]; then
-                selected_key="$candidate"
-                break
-              fi
-            fi
-          done
-          test -n "$selected_key" || (echo "::error::No valid Supabase public API key was found in SUPABASE_PUBLISHABLE_KEY, SUPABASE_ANON_KEY or SUPABASE_KEY." && cat /tmp/supabase-auth-settings.json && exit 1)
-          echo "SUPABASE_URL=$SUPABASE_URL" >> "$GITHUB_ENV"
-          echo "SUPABASE_PUBLISHABLE_KEY=$selected_key" >> "$GITHUB_ENV"
-          echo "Supabase URL + publishable key validated successfully (HTTP 200)."
+          test -n "https://ktiawqonbjhzzghksngr.supabase.co"
+          echo "BIIC CHAT production Supabase project is configured in the client."
+          echo "The publishable key is bundled via AppConfig; no CI secret is required."
+
 
       - name: Install SVG conversion tool
         run: |

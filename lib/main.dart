@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,6 +17,12 @@ Future<void> main() async {
 
 class BIICChatApp extends StatelessWidget {
   const BIICChatApp({super.key});
+  @override
+  void dispose() {
+    _navigationTimer?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     const red = Color(0xFFD71920);
@@ -46,10 +54,12 @@ class BIICSplashGate extends StatefulWidget {
 }
 
 class _BIICSplashGateState extends State<BIICSplashGate> {
+  Timer? _navigationTimer;
+
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 1400), () {
+    _navigationTimer = Timer(const Duration(milliseconds: 1400), () {
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(

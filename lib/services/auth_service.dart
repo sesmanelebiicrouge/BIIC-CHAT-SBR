@@ -95,6 +95,22 @@ class AuthService {
     }
   }
 
+  Future<void> resendPasswordResetCode(String phone) async {
+    try {
+      await _client.auth.signInWithOtp(
+        phone: phone.trim(),
+        shouldCreateUser: false,
+      );
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (e) {
+      throw const AuthServiceException(
+        'Impossible de renvoyer le code de récupération. Attendez quelques instants puis réessayez.',
+        'resend_reset_error',
+      );
+    }
+  }
+
   Future<void> requestPasswordReset(String phone) async {
     try {
       await _client.auth.signInWithOtp(

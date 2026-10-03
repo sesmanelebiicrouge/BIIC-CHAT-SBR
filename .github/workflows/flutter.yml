@@ -22,11 +22,45 @@ jobs:
       - name: Generate missing Flutter platform scaffolding
         run: flutter create --platforms=android,web --org com.biicchat --project-name biic_chat_sbr .
 
+      - name: Restore BIIC CHAT Android manifest
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/src/main/AndroidManifest.xml")
+          p.write_text("""<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.biicchat.biic_chat_sbr">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <application
+        android:label="BIIC CHAT"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <meta-data android:name="flutterEmbedding" android:value="2" />
+    </application>
+</manifest>
+""")
+          PY
+
       - name: Install dependencies
         run: flutter pub get
 
       - name: Format check
-        run: dart format .
+        run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -36,3 +70,30 @@ jobs:
 
       - name: Build Web
         run: flutter build web --release
+
+      - name: Prepare Android release configuration
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("android/app/build.gradle")
+          if not p.exists():
+              p=Path("android/app/build.gradle.kts")
+          s=p.read_text()
+          print("Android build file:", p)
+          print("Application ID check:", "com.biicchat.biic_chat_sbr" in s)
+          print("Target API 36 check:", "36" in s)
+          PY
+
+      - name: Build Android App Bundle (unsigned)
+        run: flutter build appbundle --release
+
+      - name: Verify Android App Bundle
+        run: |
+          test -s build/app/outputs/bundle/release/app-release.aab
+          ls -lh build/app/outputs/bundle/release/app-release.aab
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: biic-chat-android-aab
+          path: build/app/outputs/bundle/release/app-release.aab

@@ -96,8 +96,14 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _resendCode() async {
     if(_pendingPhone.isEmpty)return;
     setState(()=>_loading=true);
-    try{await _auth.resendSignupCode(_pendingPhone);_message('Un nouveau code a été envoyé.');}
-    catch(e){_message(AuthService.readableError(e));}
+    try{
+      if(_mode==_AuthMode.verifyReset){
+        await _auth.resendPasswordResetCode(_pendingPhone);
+      }else{
+        await _auth.resendSignupCode(_pendingPhone);
+      }
+      _message('Un nouveau code a été envoyé.');
+    }catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
 

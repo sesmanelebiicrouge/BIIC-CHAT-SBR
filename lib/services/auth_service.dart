@@ -82,7 +82,7 @@ class AuthService {
   Future<void> resendSignupCode(String phone) async {
     try {
       await _client.auth.resend(
-        type: OtpType.signup,
+        type: OtpType.sms,
         phone: phone.trim(),
       );
     } on AuthException catch (e) {

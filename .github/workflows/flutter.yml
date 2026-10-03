@@ -75,13 +75,20 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path("android/app/build.gradle")
+          p=Path("android/app/build.gradle.kts")
           if not p.exists():
-              p=Path("android/app/build.gradle.kts")
+              p=Path("android/app/build.gradle")
           s=p.read_text()
+          s=s.replace('applicationId = "com.example.biic_chat_sbr"', 'applicationId = "com.biicchat.biic_chat_sbr"')
+          s=s.replace('namespace = "com.example.biic_chat_sbr"', 'namespace = "com.biicchat.biic_chat_sbr"')
+          s=s.replace('targetSdk = flutter.targetSdkVersion', 'targetSdk = 36')
+          s=s.replace('targetSdk flutter.targetSdkVersion', 'targetSdk 36')
+          p.write_text(s)
           print("Android build file:", p)
-          print("Application ID check:", "com.biicchat.biic_chat_sbr" in s)
-          print("Target API 36 check:", "36" in s)
+          print("Application ID:", "com.biicchat.biic_chat_sbr" in s)
+          print("Target API 36:", ("targetSdk = 36" in s or "targetSdk 36" in s))
+          if "com.biicchat.biic_chat_sbr" not in s or ("targetSdk = 36" not in s and "targetSdk 36" not in s):
+              raise SystemExit("Android release configuration was not applied.")
           PY
 
       - name: Build Android App Bundle (unsigned)

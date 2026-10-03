@@ -24,3 +24,8 @@
 **/coverage/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
+
+# Android release signing secrets
+**/android/key.properties
+**/android/*.jks
+**/android/*.keystore

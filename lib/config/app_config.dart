@@ -1,22 +1,17 @@
 class AppConfig {
-  // BIIC CHAT production Supabase project.
-  // Publishable/anon keys are intended for client applications and are
-  // protected by Supabase Auth + Row Level Security.
-  static const _defaultSupabaseUrl =
-      'https://ktiawqonbjhzzghksngr.supabase.co';
-  static const _defaultSupabasePublishableKey =
-      'sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB';
-
+  // Runtime configuration is provided by Flutter build-time defines.
+  // Do not commit real production credentials.
   static const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: _defaultSupabaseUrl,
+    defaultValue: '',
   );
   static const supabasePublishableKey = String.fromEnvironment(
     'SUPABASE_PUBLISHABLE_KEY',
-    defaultValue: _defaultSupabasePublishableKey,
+    defaultValue: '',
   );
   static const supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
+    defaultValue: '',
   );
 
   static String get supabaseKey =>

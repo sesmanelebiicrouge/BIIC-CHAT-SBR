@@ -1,7 +1,7 @@
 {
   "name": "BIIC CHAT",
   "short_name": "BIIC CHAT",
-  "start_url": ".",
+  "start_url": "/BIIC-CHAT-SBR/",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#D71920",
@@ -10,10 +10,17 @@
   "prefer_related_applications": false,
   "icons": [
     {
+      "src": "biic_logo_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "biic_logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "scope": "/BIIC-CHAT-SBR/"
 }

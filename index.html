@@ -52,5 +52,51 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+
+<script>
+(() => {
+  let deferredPrompt = null;
+  const createInstallButton = () => {
+    if (document.getElementById("biic-install-app")) return;
+    const button = document.createElement("button");
+    button.id = "biic-install-app";
+    button.type = "button";
+    button.textContent = "📲 Installer BIIC CHAT";
+    button.setAttribute("aria-label", "Installer BIIC CHAT");
+    Object.assign(button.style, {
+      position: "fixed",
+      right: "16px",
+      bottom: "16px",
+      zIndex: "2147483647",
+      padding: "12px 16px",
+      border: "0",
+      borderRadius: "999px",
+      background: "#D71920",
+      color: "#fff",
+      font: "600 14px system-ui, sans-serif",
+      boxShadow: "0 4px 16px rgba(0,0,0,.25)",
+      cursor: "pointer"
+    });
+    button.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      button.remove();
+    });
+    document.body.appendChild(button);
+  };
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    deferredPrompt = event;
+    createInstallButton();
+  });
+  window.addEventListener("appinstalled", () => {
+    document.getElementById("biic-install-app")?.remove();
+    deferredPrompt = null;
+  });
+})();
+</script>
+
 </body>
 </html>

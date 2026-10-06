@@ -38,7 +38,10 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Test
-        run: flutter test
+        run: |
+          flutter test \
+            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB
 
       - name: Validate production backend configuration
         run: |
@@ -132,6 +135,8 @@ jobs:
       - name: Build Web release
         run: |
           flutter build web --release \
+            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB \
             --pwa-strategy=none \
             --base-href "/BIIC-CHAT-SBR/"
 

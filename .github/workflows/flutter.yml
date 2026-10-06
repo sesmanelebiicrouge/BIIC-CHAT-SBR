@@ -19,20 +19,25 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate missing Flutter platform scaffolding
-        run: flutter create --platforms=android,web --org com.biicchat --project-name biic_chat_sbr .
-
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Format check
+      - name: Format
         run: dart format .
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
       - name: Test
-        run: flutter test
+        run: |
+          flutter test \
+            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB
 
       - name: Build Web
-        run: flutter build web --release
+        run: |
+          flutter build web --release \
+            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB \
+            --pwa-strategy=none \
+            --base-href "/BIIC-CHAT-SBR/"

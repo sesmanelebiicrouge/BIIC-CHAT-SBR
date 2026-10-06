@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/sitemap.xml
+
+# Disallow AI crawlers that don't respect robots.txt
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+User-agent: Googlebot-Extended
+Allow: /

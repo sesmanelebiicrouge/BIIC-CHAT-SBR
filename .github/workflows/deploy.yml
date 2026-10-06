@@ -183,6 +183,9 @@ jobs:
               {"src": "biic_logo_192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
               {"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
           ]
+          data["shortcuts"] = [
+              {"name": "Ouvrir BIIC CHAT", "short_name": "Chat", "url": "/BIIC-CHAT-SBR/", "icons": [{"src": "biic_logo_192.png", "sizes": "192x192", "type": "image/png"}]}
+          ]
           m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
           rsvg-convert -w 192 -h 192 -o web/biic_logo_192.png assets/biic_logo.svg
@@ -211,6 +214,7 @@ jobs:
           grep -q 'biic_logo_192.png' build/web/manifest.json
           grep -q '"display": "standalone"' build/web/manifest.json
           grep -q '"start_url": "/BIIC-CHAT-SBR/"' build/web/manifest.json
+          grep -q '"shortcuts"' build/web/manifest.json
           grep -q 'Installer BIIC CHAT' build/web/index.html
           grep -q 'BIIC CHAT' build/web/index.html
 

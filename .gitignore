@@ -29,3 +29,7 @@
 **/android/key.properties
 **/android/*.jks
 **/android/*.keystore
+
+# Supabase Edge Function local secrets
+supabase/functions/.env
+supabase/functions/.env.*

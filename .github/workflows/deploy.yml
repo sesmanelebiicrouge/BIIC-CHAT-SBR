@@ -99,7 +99,8 @@ jobs:
               '<meta name="description" content="A new Flutter project.">',
               '<meta name="description" content="BIIC CHAT — messagerie instantanée par numéro de téléphone, avec messages, médias, appels audio et vidéo.">'
           )
-          s = s.replace("</head>", '''  <link rel="canonical" href="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
+          s = s.replace("</head>", '''  <meta name="google-site-verification" content="cWgvvBx_bxvIABAnDz2XsY9-mtoICnqHkfrhUw2acLk" />
+          <link rel="canonical" href="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">
           <meta property="og:title" content="BIIC CHAT">
           <meta property="og:description" content="BIIC CHAT — messagerie instantanée.">
           <meta property="og:type" content="website">

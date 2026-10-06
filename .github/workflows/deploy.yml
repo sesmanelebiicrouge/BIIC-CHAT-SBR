@@ -118,6 +118,53 @@ jobs:
               '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">'
           )
           s = s.replace("<title>biic_chat_sbr</title>", "<title>BIIC CHAT</title>")
+          install_script = r"""
+          <script>
+          (() => {
+            let deferredPrompt = null;
+            const createInstallButton = () => {
+              if (document.getElementById("biic-install-app")) return;
+              const button = document.createElement("button");
+              button.id = "biic-install-app";
+              button.type = "button";
+              button.textContent = "📲 Installer BIIC CHAT";
+              button.setAttribute("aria-label", "Installer BIIC CHAT");
+              Object.assign(button.style, {
+                position: "fixed",
+                right: "16px",
+                bottom: "16px",
+                zIndex: "2147483647",
+                padding: "12px 16px",
+                border: "0",
+                borderRadius: "999px",
+                background: "#D71920",
+                color: "#fff",
+                font: "600 14px system-ui, sans-serif",
+                boxShadow: "0 4px 16px rgba(0,0,0,.25)",
+                cursor: "pointer"
+              });
+              button.addEventListener("click", async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                button.remove();
+              });
+              document.body.appendChild(button);
+            };
+            window.addEventListener("beforeinstallprompt", (event) => {
+              event.preventDefault();
+              deferredPrompt = event;
+              createInstallButton();
+            });
+            window.addEventListener("appinstalled", () => {
+              document.getElementById("biic-install-app")?.remove();
+              deferredPrompt = null;
+            });
+          })();
+          </script>
+          """
+          s = s.replace("</body>", install_script + "\n</body>")
           p.write_text(s)
 
           m = Path("web/manifest.json")
@@ -127,9 +174,18 @@ jobs:
           data["background_color"] = "#FFFFFF"
           data["theme_color"] = "#D71920"
           data["description"] = "BIIC CHAT — messagerie instantanée."
-          data["icons"] = [{"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}]
+          data["start_url"] = "/BIIC-CHAT-SBR/"
+          data["scope"] = "/BIIC-CHAT-SBR/"
+          data["display"] = "standalone"
+          data["orientation"] = "portrait-primary"
+          data["prefer_related_applications"] = False
+          data["icons"] = [
+              {"src": "biic_logo_192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+              {"src": "biic_logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+          ]
           m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
+          rsvg-convert -w 192 -h 192 -o web/biic_logo_192.png assets/biic_logo.svg
           rsvg-convert -w 512 -h 512 -o web/biic_logo.png assets/biic_logo.svg
 
       - name: Build Web release
@@ -147,10 +203,15 @@ jobs:
           test -s build/web/flutter_bootstrap.js
           test -s build/web/biic_logo.svg
           test -s build/web/biic_logo.png
+          test -s build/web/biic_logo_192.png
           test -s build/web/sitemap.xml
           test -s build/web/robots.txt
           test -s build/web/manifest.json
           grep -q 'biic_logo.png' build/web/manifest.json
+          grep -q 'biic_logo_192.png' build/web/manifest.json
+          grep -q '"display": "standalone"' build/web/manifest.json
+          grep -q '"start_url": "/BIIC-CHAT-SBR/"' build/web/manifest.json
+          grep -q 'Installer BIIC CHAT' build/web/index.html
           grep -q 'BIIC CHAT' build/web/index.html
 
       - name: Publish gh-pages branch

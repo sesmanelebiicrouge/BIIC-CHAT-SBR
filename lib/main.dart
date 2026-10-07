@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'pages/auth_page.dart';
 import 'pages/home_page.dart';
+import 'pages/admin_page.dart';
 import 'services/auth_service.dart';
 import 'services/backend_service.dart';
 
@@ -36,6 +37,12 @@ class BIICChatApp extends StatelessWidget {
         ),
       ),
       home: const BIICSplashGate(),
+      onGenerateRoute: (settings) {
+        if (settings.name == '/admin') {
+          return MaterialPageRoute<void>(builder: (_) => const AdminPage());
+        }
+        return null;
+      },
     );
   }
 }

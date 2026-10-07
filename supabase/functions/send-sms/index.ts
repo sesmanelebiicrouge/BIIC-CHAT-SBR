@@ -16,6 +16,32 @@ function required(name: string): string {
   return value;
 }
 
+function webhookSecrets(): string[] {
+  return required("SEND_SMS_HOOK_SECRET")
+    .split("|")
+    .map((value) => value.trim().replace(/^v1,whsec_/, ""))
+    .filter(Boolean);
+}
+
+async function verifyWebhook(
+  payload: string,
+  headers: Record<string, string>,
+): Promise<{ user?: { phone?: string }; sms?: { otp?: string } }> {
+  let lastError: unknown;
+  for (const secret of webhookSecrets()) {
+    try {
+      const webhook = new Webhook(secret);
+      return webhook.verify(payload, headers) as {
+        user?: { phone?: string };
+        sms?: { otp?: string };
+      };
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError ?? new Error("Invalid webhook signature.");
+}
+
 async function getOrangeAccessToken(clientId: string, clientSecret: string) {
   const basic = btoa(`${clientId}:${clientSecret}`);
   const response = await fetch(ORANGE_TOKEN_URL, {
@@ -30,11 +56,15 @@ async function getOrangeAccessToken(clientId: string, clientSecret: string) {
 
   if (!response.ok) {
     const details = await response.text();
-    throw new Error(`Orange OAuth failed (HTTP ${response.status}): ${details.slice(0, 500)}`);
+    throw new Error(
+      `Orange OAuth failed (HTTP ${response.status}): ${details.slice(0, 500)}`,
+    );
   }
 
   const data = await response.json();
-  if (!data.access_token) throw new Error("Orange OAuth response did not contain an access token.");
+  if (!data.access_token) {
+    throw new Error("Orange OAuth response did not contain an access token.");
+  }
   return data.access_token as string;
 }
 
@@ -47,18 +77,16 @@ function normalizeIvoryCoastPhone(phone: string): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
-
-  const hookSecret = Deno.env.get("SEND_SMS_HOOK_SECRET");
-  if (!hookSecret) return json({ error: "SMS hook is not configured." }, 500);
+  if (req.method !== "POST") {
+    return json({ error: "Method not allowed" }, 405);
+  }
 
   try {
-    const body = await req.text();
-    const webhook = new Webhook(hookSecret);
-    const event = webhook.verify(body, Object.fromEntries(req.headers.entries())) as {
-      user?: { phone?: string };
-      sms?: { otp?: string };
-    };
+    const payload = await req.text();
+    const event = await verifyWebhook(
+      payload,
+      Object.fromEntries(req.headers.entries()),
+    );
 
     const phone = normalizeIvoryCoastPhone(event.user?.phone ?? "");
     const otp = String(event.sms?.otp ?? "").trim();
@@ -69,12 +97,31 @@ Deno.serve(async (req) => {
 
     const clientId = required("ORANGE_SMS_CLIENT_ID");
     const clientSecret = required("ORANGE_SMS_CLIENT_SECRET");
-    const sender = Deno.env.get("ORANGE_SMS_SENDER")?.trim() || "tel:+2250000";
+    const sender =
+      Deno.env.get("ORANGE_SMS_SENDER")?.trim() || "tel:+2250000";
+    const senderName = Deno.env.get("ORANGE_SMS_SENDER_NAME")?.trim();
 
     const token = await getOrangeAccessToken(clientId, clientSecret);
     const senderEncoded = encodeURIComponent(sender);
+
+    // SMS_OCB2 is for Orange-only/on-net traffic. BIIC CHAT uses
+    // the Côte d'Ivoire SMS API for delivery to any local operator.
     const endpoint =
-      `${ORANGE_SMS_BASE}/outbound/${senderEncoded}/requests?resource_type_parameter_management=SMS_OCB2`;
+      `${ORANGE_SMS_BASE}/outbound/${senderEncoded}/requests`;
+
+    const outboundSMSMessageRequest: Record<string, unknown> = {
+      address: `tel:${phone}`,
+      senderAddress: sender,
+      outboundSMSTextMessage: {
+        message:
+          `BIIC CHAT : votre code de vérification est ${otp}. Ne le partagez avec personne.`,
+      },
+    };
+
+    // Set this only after Orange has approved/whitelisted the sender name.
+    if (senderName) {
+      outboundSMSMessageRequest.senderName = senderName;
+    }
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -83,23 +130,17 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({
-        outboundSMSMessageRequest: {
-          address: `tel:${phone}`,
-          senderAddress: sender,
-          outboundSMSTextMessage: {
-            message: `BIIC CHAT : votre code de vérification est ${otp}. Ne le partagez avec personne.`,
-          },
-        },
-      }),
+      body: JSON.stringify({ outboundSMSMessageRequest }),
     });
 
     if (!response.ok) {
       const details = await response.text();
-      throw new Error(`Orange SMS failed (HTTP ${response.status}): ${details.slice(0, 500)}`);
+      throw new Error(
+        `Orange SMS failed (HTTP ${response.status}): ${details.slice(0, 500)}`,
+      );
     }
 
-    return new Response(null, { status: 200 });
+    return json({}, 200);
   } catch (error) {
     console.error("BIIC CHAT Orange SMS hook error:", error);
     return json({ error: "Unable to send authentication SMS." }, 500);

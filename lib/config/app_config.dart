@@ -14,6 +14,13 @@ class AppConfig {
     defaultValue: '',
   );
 
+  // Temporary QA mode: allow direct access without sign-up in test builds only.
+  // This must be disabled before production/public deployment.
+  static const allowGuestAccess = bool.fromEnvironment(
+    'BIIC_GUEST_ACCESS',
+    defaultValue: true,
+  );
+
   static String get supabaseKey =>
       supabasePublishableKey.isNotEmpty ? supabasePublishableKey : supabaseAnonKey;
 

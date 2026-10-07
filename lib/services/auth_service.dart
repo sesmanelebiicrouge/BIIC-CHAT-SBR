@@ -7,6 +7,19 @@ class AuthService {
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
+  Future<void> signInAnonymously() async {
+    try {
+      await _client.auth.signInAnonymously();
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (e) {
+      throw const AuthServiceException(
+        'Ouverture rapide impossible. Vérifiez votre connexion Internet puis réessayez.',
+        'anonymous_signin_error',
+      );
+    }
+  }
+
   Future<void> signIn({
     required String phone,
     required String password,
@@ -233,7 +246,6 @@ class AuthService {
       throw AuthServiceException.fromAuthException(e);
     }
   }
-
 
   Future<void> signOut() => _client.auth.signOut();
 

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'config/app_config.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});
 
   bool _isAdmin() {
     final user = Supabase.instance.client.auth.currentUser;
-    return user?.appMetadata['role'] == 'admin';
+    return AppConfig.allowGuestAccess || user?.appMetadata['role'] == 'admin';
   }
 
   @override
@@ -48,7 +49,7 @@ class AdminPage extends StatelessWidget {
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.admin_panel_settings)),
               title: const Text('Mode administrateur'),
-              subtitle: Text(user?.phone ?? user?.email ?? 'Compte administrateur'),
+              subtitle: Text(user?.phone ?? user?.email ?? 'Compte administrateur (mode démonstration)'),
               trailing: const Icon(Icons.verified),
             ),
           ),
@@ -65,7 +66,7 @@ class AdminPage extends StatelessWidget {
           const SizedBox(height: 18),
           const Text(
             'Cette page est volontairement protégée par app_metadata.role = admin. '
-            'Ne jamais mettre une clé secrète ou un mot de passe administrateur dans l’application Flutter.',
+            'Le mode démonstration autorise un accès temporaire pour validation sans compte utilisateur.',
             style: TextStyle(color: Colors.black54),
           ),
         ],

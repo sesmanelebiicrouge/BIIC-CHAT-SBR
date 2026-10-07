@@ -145,8 +145,28 @@ class ProductionConfigErrorPage extends StatelessWidget {
   }
 }
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _guestRequestAttempted = false;
+
+  Future<void> _startGuestSession() async {
+    if (_guestRequestAttempted) return;
+    setState(() => _guestRequestAttempted = true);
+    try {
+      await AuthService().signInAnonymously();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _guestRequestAttempted = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = AuthService();
@@ -154,6 +174,23 @@ class AuthGate extends StatelessWidget {
       stream: auth.authStateChanges,
       builder: (context, snapshot) {
         final session = snapshot.data?.session ?? auth.currentSession;
+
+        if (session == null && AppConfig.allowGuestAccess) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _startGuestSession());
+          return const Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 12),
+                  Text('Ouverture rapide en mode démonstration...'),
+                ],
+              ),
+            ),
+          );
+        }
+
         return session == null ? const AuthPage() : const HomePage();
       },
     );

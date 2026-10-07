@@ -18,7 +18,7 @@ class AppConfig {
   // This must be disabled before production/public deployment.
   static const allowGuestAccess = bool.fromEnvironment(
     'BIIC_GUEST_ACCESS',
-    defaultValue: true,
+    defaultValue: false,
   );
 
   static String get supabaseKey =>

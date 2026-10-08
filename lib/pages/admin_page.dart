@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'config/app_config.dart';
+import 'package:biic_chat_sbr/config/app_config.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});

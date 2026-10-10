@@ -1,0 +1,5 @@
+# Supabase local and deployment configuration for BIIC CHAT.
+# The Send SMS Auth Hook is authenticated by Standard Webhooks signatures,
+# not by a Supabase user JWT. The function verifies that signature itself.
+[functions.send-sms]
+verify_jwt = false

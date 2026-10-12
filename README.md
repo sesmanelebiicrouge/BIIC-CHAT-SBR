@@ -60,6 +60,7 @@ Appliquer dans l'ordre, une seule fois, les migrations du dossier supabase/migra
 13. 013_normalize_ci_contact_phones.sql
 14. 014_enforce_blocks_on_direct_chats.sql
 15. 015_privacy_scope_block_checks.sql
+16. 016_fix_contact_hash_extension_search_path.sql
 
 Après migration, vérifier dans Supabase que Realtime est activé pour les tables utilisées, et que les buckets chat-media et avatars restent privés.
 

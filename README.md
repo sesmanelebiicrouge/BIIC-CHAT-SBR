@@ -62,7 +62,7 @@ Appliquer dans l'ordre, une seule fois, les migrations du dossier supabase/migra
 15. 015_privacy_scope_block_checks.sql
 16. 016_fix_contact_hash_extension_search_path.sql
 
-Après migration, vérifier dans Supabase que Realtime est activé pour les tables utilisées, et que les buckets chat-media et avatars restent privés.
+Pour appliquer les corrections ciblées 013 à 016 en une seule exécution sur une base déjà existante, le script consolidé est dans `supabase/manual/BIIC_CHAT_REPAIR_013_016.sql`. Vérifier le projet et effectuer une sauvegarde avant l’exécution. Ce script ne déploie pas la fonction SMS et ne configure pas les secrets Orange.\n\nAprès migration, vérifier dans Supabase que Realtime est activé pour les tables utilisées, et que les buckets chat-media et avatars restent privés.
 
 ## SMS OTP Orange Côte d'Ivoire
 

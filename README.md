@@ -44,25 +44,35 @@ Le client Flutter utilise une clé publique Supabase via les options de compilat
 
 ## Migrations Supabase
 
-Appliquer dans l'ordre, une seule fois, les migrations du dossier supabase/migrations, par numéro croissant :
-1. 001_initial_schema.sql
-2. 002_members_auth_hardening.sql
-3. 003_chat_media_storage.sql
-4. 004_rls_realtime_fix.sql
-5. 005_profiles_reports_safety.sql
-6. 006_privacy_hardening.sql
-7. 007_phone_accounts_and_deletion.sql
-8. 008_imported_contacts.sql
-9. 009_message_read_receipts.sql
-10. 010_chat_reliability.sql
-11. 011_scope_read_receipts.sql
-12. 012_atomic_direct_conversations.sql
-13. 013_normalize_ci_contact_phones.sql
-14. 014_enforce_blocks_on_direct_chats.sql
-15. 015_privacy_scope_block_checks.sql
-16. 016_fix_contact_hash_extension_search_path.sql
+**Attention : l'historique des migrations doit être réconcilié avant d'utiliser `supabase db push`.** Le dépôt contient plusieurs fichiers portant le même préfixe de version (`013`, `014`, `015` et `016`). Le CLI Supabase utilise ce préfixe comme version de migration ; ces doublons peuvent bloquer l'application automatisée ou provoquer un historique incohérent.
 
-Pour appliquer les corrections ciblées 013 à 016 en une seule exécution sur une base déjà existante, le script consolidé est dans `supabase/manual/BIIC_CHAT_REPAIR_013_016.sql`. Vérifier le projet et effectuer une sauvegarde avant l’exécution. Ce script ne déploie pas la fonction SMS et ne configure pas les secrets Orange.\n\nAprès migration, vérifier dans Supabase que Realtime est activé pour les tables utilisées, et que les buckets chat-media et avatars restent privés.
+Fichiers actuellement présents :
+
+- `001_initial_schema.sql`
+- `002_members_auth_hardening.sql`
+- `003_chat_media_storage.sql`
+- `004_rls_realtime_fix.sql`
+- `005_profiles_reports_safety.sql`
+- `006_privacy_hardening.sql`
+- `007_phone_accounts_and_deletion.sql`
+- `008_imported_contacts.sql`
+- `009_message_read_receipts.sql`
+- `010_chat_reliability.sql`
+- `011_scope_read_receipts.sql`
+- `012_atomic_direct_conversations.sql`
+- `013_normalize_ci_contact_phones.sql`
+- `013_production_reliability.sql`
+- `014_enforce_blocks_on_direct_chats.sql`
+- `014_harden_rls_auto_enable.sql`
+- `015_privacy_scope_block_checks.sql`
+- `015_production_security_performance.sql`
+- `016_fix_contact_hash_extension_search_path.sql`
+- `016_harden_function_search_paths.sql`
+- `017_rls_performance_and_block_privacy.sql`
+
+Ne renommez pas ces fichiers et ne relancez pas leurs SQL à l'aveugle sur la base de production : il faut d'abord vérifier l'historique réel des migrations dans Supabase et préparer une migration de réconciliation compatible avec cet historique. L'accès Supabase n'étant pas disponible via la connexion actuelle, cette vérification distante n'a pas pu être effectuée pendant la préparation de la version 1.0.2.
+
+Le script `supabase/manual/BIIC_CHAT_REPAIR_013_016.sql` est un correctif manuel ciblé, pas un remplacement complet de toutes les migrations. Faites une sauvegarde et comparez son contenu à l'état réel de la base avant exécution. Après toute migration, vérifiez que Realtime est activé pour les tables utilisées et que les buckets `chat-media` et `avatars` restent privés.
 
 ## SMS OTP Orange Côte d'Ivoire
 

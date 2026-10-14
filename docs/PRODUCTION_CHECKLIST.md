@@ -1,4 +1,4 @@
-# BIIC CHAT — checklist de mise en production
+# BIIC CHAT — checklist de mise en production\n\nVersion cliente préparée : **1.0.2+8**. Les tests et builds de la nouvelle révision doivent réussir avant fusion et publication.
 
 ## Déjà intégré
 - Authentification Supabase : inscription, connexion, déconnexion et récupération du mot de passe.
@@ -10,10 +10,10 @@
 - RLS Supabase et vérification d'appartenance aux conversations.
 - Protection contre l'envoi de messages avec un utilisateur bloqué.
 - CI GitHub Actions : analyse, formatage, tests et build Web.
-- Tests automatisés de la configuration publique Supabase.
+- Tests automatisés de la configuration publique Supabase.\n- Import de contacts découpé en lots de 500, avec tests des limites de lot.\n- Validation des fichiers joints côté service et nettoyage des médias orphelins en cas d’échec d’enregistrement.
 
 ## À configurer avant publication
-1. Appliquer toutes les migrations Supabase dans l'ordre, jusqu'à 013_production_reliability.sql.
+1. **Bloquant à vérifier :** les migrations SQL du dépôt comportent des préfixes dupliqués (013 à 016). Comparer les migrations à l'historique réel du projet Supabase avant tout déploiement de schéma ; ne pas exécuter toutes les migrations aveuglément.
 2. Renseigner SUPABASE_URL et SUPABASE_PUBLISHABLE_KEY comme variables de build.
 3. Ne jamais mettre la clé service_role dans Flutter.
 4. Configurer les notifications push Android/iOS/Web avec Firebase/FCM et les credentials de production.

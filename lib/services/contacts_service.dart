@@ -20,6 +20,21 @@ class ImportedContact {
   bool get isOnBiicChat => matchedUserId != null;
 }
 
+/// Splits large contact lists into requests small enough for the Supabase RPC.
+/// Kept as a pure helper so batch boundaries can be tested without device access.
+List<List<T>> splitIntoBatches<T>(List<T> items, {int batchSize = 500}) {
+  if (batchSize < 1) {
+    throw ArgumentError.value(batchSize, 'batchSize', 'Must be greater than zero.');
+  }
+
+  final batches = <List<T>>[];
+  for (var start = 0; start < items.length; start += batchSize) {
+    final end = (start + batchSize < items.length) ? start + batchSize : items.length;
+    batches.add(items.sublist(start, end));
+  }
+  return batches;
+}
+
 class ContactsService {
   final SupabaseClient _client;
   ContactsService({SupabaseClient? client})
@@ -58,12 +73,19 @@ class ContactsService {
 
     if (payload.isEmpty) return const [];
 
-    final response = await _client.rpc(
-      'sync_device_contacts',
-      params: {'p_contacts': payload},
-    );
+    // The database RPC deliberately limits each request to 1,000 contacts.
+    // Smaller batches reduce request size and prevent large address books from
+    // failing as one all-or-nothing import.
+    final rows = <Map<String, dynamic>>[];
+    for (final batch in splitIntoBatches(payload)) {
+      final response = await _client.rpc(
+        'sync_device_contacts',
+        params: {'p_contacts': batch},
+      );
+      rows.addAll(List<Map<String, dynamic>>.from(response as List));
+    }
 
-    return List<Map<String, dynamic>>.from(response as List)
+    return rows
         .map(
           (row) => ImportedContact(
             phone: row['phone'] as String? ?? '',

@@ -1,6 +1,7 @@
-BIIC CHAT 1.0.0
+BIIC CHAT 1.0.2
 
-- Amélioration des conversations en temps réel.
-- Accusés de lecture.
-- Import et partage de contacts protégés selon la plateforme.
-- Améliorations de stabilité et de sécurité.
+- Importation des carnets d’adresses volumineux par lots pour éviter les échecs sur les listes de contacts importantes.
+- Validation renforcée des fichiers joints : identifiant de conversation, fichiers vides et limite de 50 Mo.
+- Nettoyage automatique des médias téléversés si l’enregistrement du message échoue.
+- Tests automatisés ajoutés pour les lots d’importation de contacts.
+- Améliorations de fiabilité et de stabilité.

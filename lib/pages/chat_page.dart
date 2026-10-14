@@ -157,8 +157,34 @@ class _ChatPageState extends State<ChatPage> {
     }
     setState(() => _uploading = true);
     try {
-      final path = await _media.uploadChatFile(conversationId: widget.conversationId, fileName: name, bytes: Uint8List.fromList(bytes), contentType: contentType);
-      await _service.sendMessage(conversationId: widget.conversationId, senderId: user.id, content: '', mediaUrl: path, mediaType: contentType);
+      String? uploadedPath;
+      try {
+        uploadedPath = await _media.uploadChatFile(
+          conversationId: widget.conversationId,
+          fileName: name,
+          bytes: Uint8List.fromList(bytes),
+          contentType: contentType,
+        );
+        await _service.sendMessage(
+          conversationId: widget.conversationId,
+          senderId: user.id,
+          content: '',
+          mediaUrl: uploadedPath,
+          mediaType: contentType,
+        );
+        // The object is now referenced by a persisted message.
+        uploadedPath = null;
+      } catch (_) {
+        // If message creation fails after upload, avoid leaving an orphan object.
+        if (uploadedPath != null) {
+          try {
+            await _media.deleteChatFile(uploadedPath);
+          } catch (_) {
+            // Preserve the original send error; cleanup can be retried separately.
+          }
+        }
+        rethrow;
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Fichier non envoyé : $e')));
     } finally { if (mounted) setState(() => _uploading = false); }

@@ -127,7 +127,7 @@ class _AuthPageState extends State<AuthPage> {
     finally{if(mounted)setState(()=>_loading=false);}
   }
 
-  void _switchMode(_AuthMode mode){setState(()=>{_mode=mode;_otp.clear();if(mode==_AuthMode.forgotPassword)_useEmail=false;if(mode==_AuthMode.signIn||mode==_AuthMode.register){_password.clear();_confirmPassword.clear();}});}
+  void _switchMode(_AuthMode mode){setState((){_mode=mode;_otp.clear();if(mode==_AuthMode.forgotPassword)_useEmail=false;if(mode==_AuthMode.signIn||mode==_AuthMode.register){_password.clear();_confirmPassword.clear();}});}
 
   String get _title=>switch(_mode){
     _AuthMode.signIn=>'Se connecter',_AuthMode.register=>'Créer votre compte',_AuthMode.verifySignup=>'Vérifier votre numéro',

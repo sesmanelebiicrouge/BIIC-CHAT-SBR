@@ -7,6 +7,92 @@ class AuthService {
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
+
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _client.auth.signInWithPassword(
+        email: email.trim().toLowerCase(),
+        password: password,
+      );
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (_) {
+      throw const AuthServiceException(
+        'Connexion impossible. Vérifiez Internet puis réessayez.',
+        'email_signin_error',
+      );
+    }
+  }
+
+  Future<AuthResponse> signUpWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    try {
+      final response = await _client.auth.signUp(
+        email: email.trim().toLowerCase(),
+        password: password,
+        data: {'display_name': displayName.trim()},
+      );
+      if (response.user == null) {
+        throw const AuthServiceException(
+          'Le serveur n’a pas créé le compte. Vérifiez l’adresse e-mail puis réessayez.',
+          'email_signup_no_user',
+        );
+      }
+      return response;
+    } on AuthServiceException {
+      rethrow;
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (_) {
+      throw const AuthServiceException(
+        'Création du compte par e-mail impossible pour le moment. Réessayez.',
+        'email_signup_error',
+      );
+    }
+  }
+
+  Future<AuthResponse> verifyEmailSignupCode({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      return await _client.auth.verifyOTP(
+        type: OtpType.signup,
+        email: email.trim().toLowerCase(),
+        token: token.trim(),
+      );
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (_) {
+      throw const AuthServiceException(
+        'Vérification de l’adresse e-mail impossible. Vérifiez le code puis réessayez.',
+        'email_verify_signup_error',
+      );
+    }
+  }
+
+  Future<void> resendEmailSignupCode(String email) async {
+    try {
+      await _client.auth.resend(
+        type: OtpType.signup,
+        email: email.trim().toLowerCase(),
+      );
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (_) {
+      throw const AuthServiceException(
+        'Impossible de renvoyer l’e-mail de confirmation. Réessayez dans quelques instants.',
+        'email_resend_signup_error',
+      );
+    }
+  }
+
   Future<void> signInAnonymously() async {
     try {
       await _client.auth.signInAnonymously();

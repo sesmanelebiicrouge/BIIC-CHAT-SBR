@@ -130,7 +130,7 @@ class _AuthPageState extends State<AuthPage> {
   void _switchMode(_AuthMode mode){setState((){_mode=mode;_otp.clear();if(mode==_AuthMode.forgotPassword)_useEmail=false;if(mode==_AuthMode.signIn||mode==_AuthMode.register){_password.clear();_confirmPassword.clear();}});}
 
   String get _title=>switch(_mode){
-    _AuthMode.signIn=>'Se connecter',_AuthMode.register=>'Créer votre compte',_AuthMode.verifySignup=>'Vérifier votre numéro',
+    _AuthMode.signIn=>'Se connecter',_AuthMode.register=>'Créer votre compte',_AuthMode.verifySignup=>_pendingEmail.isNotEmpty?'Vérifier votre e-mail':'Vérifier votre numéro',
     _AuthMode.forgotPassword=>'Mot de passe oublié',_AuthMode.verifyReset=>'Code de récupération',_AuthMode.setNewPassword=>'Nouveau mot de passe'};
   String get _subtitle{
     if(_isVerify)return _pendingEmail.isNotEmpty?'Entrez le code de confirmation reçu par e-mail.':'Entrez le code à 6 chiffres reçu par SMS.';

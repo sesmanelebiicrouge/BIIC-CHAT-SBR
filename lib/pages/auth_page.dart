@@ -98,7 +98,7 @@ class _AuthPageState extends State<AuthPage> {
         await _auth.verifySignupCode(phone: _pendingPhone, token: code);
       }
       if(_mode==_AuthMode.verifyReset){_password.clear();_confirmPassword.clear();setState(()=>_mode=_AuthMode.setNewPassword);_message('Numéro vérifié. Choisissez maintenant votre nouveau mot de passe.');}
-      else{_message('Numéro vérifié. Bienvenue sur BIIC CHAT.');}
+      else{_message(_pendingEmail.isNotEmpty?'Adresse e-mail confirmée. Bienvenue sur BIIC CHAT.':'Numéro vérifié. Bienvenue sur BIIC CHAT.');}
     }catch(e){_message(AuthService.readableError(e));}
     finally{if(mounted)setState(()=>_loading=false);}
   }
@@ -157,7 +157,7 @@ class _AuthPageState extends State<AuthPage> {
           maxLength: 6,
           textAlign: TextAlign.center,
           style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w800, letterSpacing: 8),
-          decoration: _decoration('Code SMS', Icons.sms_outlined).copyWith(counterText: ''),
+          decoration: _decoration(_pendingEmail.isNotEmpty ? 'Code e-mail' : 'Code SMS', _pendingEmail.isNotEmpty ? Icons.email_outlined : Icons.sms_outlined).copyWith(counterText: ''),
         ),
       ] else if (_mode == _AuthMode.setNewPassword) ...[
         TextField(

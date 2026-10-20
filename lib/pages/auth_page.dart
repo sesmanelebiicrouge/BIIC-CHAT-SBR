@@ -57,7 +57,9 @@ class _AuthPageState extends State<AuthPage> {
       finally{if(mounted)setState(()=>_loading=false);}
       return;
     }
-    if(emailMode && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+
+    if(emailMode && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)){_message('Entrez une adresse e-mail valide.');return;}
+    if(!emailMode&&!_isValidIvorianPhone(phone)){_message('Entrez un numéro ivoirien valide, par exemple 07 00 00 00 00.');return;}
+    if(_password.text.length<6){_message('Le mot de passe doit contenir au moins 6 caractères.');return;}
     if(_isRegister&&_password.text!=_confirmPassword.text){_message('Les deux mots de passe ne correspondent pas.');return;}
     if(_isRegister&&(_name.text.trim().length<2||_name.text.trim().length>60)){_message('Le nom doit contenir entre 2 et 60 caractères.');return;}
     setState(()=>_loading=true);

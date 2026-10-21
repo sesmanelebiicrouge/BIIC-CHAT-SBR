@@ -47,7 +47,7 @@ class ContactsService {
       );
     }
     final permission =
-        await FlutterContacts.permissions.request(PermissionType.readWrite);
+        await FlutterContacts.permissions.request(PermissionType.read);
     if (permission != PermissionStatus.granted) {
       throw Exception(
         'Autorisez l’accès aux contacts pour rechercher vos contacts sur BIIC CHAT.',

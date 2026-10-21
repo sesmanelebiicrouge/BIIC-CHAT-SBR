@@ -113,6 +113,25 @@ class StatusService {
     }, onConflict: 'status_id,viewer_id');
   }
 
+  Future<List<Map<String, dynamic>>> getStatusViews(String statusId) async {
+    final userId = _userId;
+    final ownedStatus = await _client
+        .from('statuses')
+        .select('id')
+        .eq('id', statusId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (ownedStatus == null) {
+      throw StateError('Vous pouvez consulter les vues de vos propres statuts uniquement.');
+    }
+    final rows = await _client
+        .from('status_views')
+        .select('viewer_id,viewed_at')
+        .eq('status_id', statusId)
+        .order('viewed_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
+  }
+
   Future<void> deleteStatus(String statusId) async {
     final row = await _client
         .from('statuses')

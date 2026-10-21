@@ -5,6 +5,7 @@ import '../services/conversation_service.dart';
 import '../services/auth_service.dart';
 import 'chat_page.dart';
 import '../services/block_report_service.dart';
+import '../services/profile_service.dart';
 
 class MembersPage extends StatefulWidget {
   const MembersPage({super.key});
@@ -15,6 +16,8 @@ class _MembersPageState extends State<MembersPage> {
   final _service = MembersService();
   final _conversation = ConversationService();
   final _safety = BlockReportService();
+  final _profiles = ProfileService();
+  final Map<String, Future<String?>> _avatarFutures = {};
   final _search = TextEditingController();
   late Future<List<Map<String, dynamic>>> _future;
   Set<String> _blockedIds = <String>{};
@@ -58,8 +61,28 @@ class _MembersPageState extends State<MembersPage> {
   }
 
   void _reload() {
+    _avatarFutures.clear();
     setState(() => _future = _service.getMembers());
     _loadBlocked();
+  }
+
+  Future<String?> _avatarUrl(Map<String, dynamic> member) {
+    final path = (member['avatar_url'] as String? ?? '').trim();
+    if (path.isEmpty) return Future<String?>.value(null);
+    return _avatarFutures.putIfAbsent(path, () => _profiles.createAvatarSignedUrl(path));
+  }
+
+  Widget _memberAvatar(Map<String, dynamic> member, String name) {
+    return FutureBuilder<String?>(
+      future: _avatarUrl(member),
+      builder: (context, snapshot) {
+        final url = snapshot.data;
+        return CircleAvatar(
+          backgroundImage: url == null ? null : NetworkImage(url),
+          child: url == null ? Text(name.substring(0, 1).toUpperCase()) : null,
+        );
+      },
+    );
   }
 
   String _memberLabel(Map<String, dynamic> member) {
@@ -384,9 +407,7 @@ class _MembersPageState extends State<MembersPage> {
                     final name = _memberLabel(member);
                     final status = member['status'] as String? ?? 'offline';
                     return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(name.substring(0, 1).toUpperCase()),
-                      ),
+                      leading: _memberAvatar(member, name),
                       title: Text(name),
                       subtitle: Text('$status • Appuyer pour discuter'),
                       trailing: PopupMenuButton<String>(

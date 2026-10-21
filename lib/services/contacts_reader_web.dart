@@ -1,4 +1,3 @@
-import 'dart:html' as html;
 import 'dart:js_util' as js_util;
 
 /// Uses the browser Contact Picker API where available (notably Chrome on

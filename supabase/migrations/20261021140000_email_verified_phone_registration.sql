@@ -13,13 +13,16 @@ alter table public.phone_registration_codes enable row level security;
 revoke all on public.phone_registration_codes from anon, authenticated;
 grant all on public.phone_registration_codes to service_role;
 
+-- Preserve the existing member directory by display name. Phone-based
+-- discovery remains restricted to the verified-phone lookup RPC below and
+-- sync_device_contacts; this list does not expose phone numbers.
 create or replace function public.list_public_users()
 returns table(id uuid, display_name text, avatar_url text, bio text, status text)
-language sql security definer stable set search_path = public as $$
+language sql security definer stable set search_path = public as $
  select u.id,u.display_name,u.avatar_url,u.bio,u.status from public.users u
- where auth.uid() is not null and u.phone_verified_at is not null and u.registered_phone is not null
+ where auth.uid() is not null
  order by u.display_name;
-$$;
+$;
 revoke all on function public.list_public_users() from public, anon;
 grant execute on function public.list_public_users() to authenticated;
 

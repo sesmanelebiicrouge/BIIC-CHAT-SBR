@@ -42,3 +42,6 @@ Ne pas demander la localisation en arrière-plan ni l’accès complet aux photo
 6. Générer/configurer le projet iOS et tester les dialogues d’autorisation et les clés Info.plist avant d’annoncer la prise en charge iOS.
 
 Cette documentation distingue les permissions déclarées des fonctionnalités effectivement livrées. La déclaration d’une permission ne suffit jamais à activer une fonctionnalité.
+## Web — accès au répertoire
+
+Sur les navigateurs mobiles qui implémentent l’API Contact Picker (notamment Chrome sur Android), le bouton « Choisir dans le répertoire » ouvre le sélecteur natif du navigateur. Seuls les contacts explicitement choisis sont lus. Cette API n’est pas disponible dans tous les navigateurs; dans ce cas, BIIC CHAT explique la limitation et laisse la recherche manuelle des membres accessible. Le navigateur doit être utilisé en contexte sécurisé (HTTPS).

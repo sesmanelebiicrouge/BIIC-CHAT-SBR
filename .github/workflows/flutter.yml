@@ -5,6 +5,10 @@ on:
     branches: [main, 'feature/**']
   pull_request:
 
+concurrency:
+  group: flutter-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   analyze-and-test:
     runs-on: ubuntu-latest

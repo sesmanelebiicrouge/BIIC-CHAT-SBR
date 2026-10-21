@@ -1,0 +1,15 @@
+# Enregistrement du numéro par e-mail — BIIC CHAT
+
+## Fonctionnement
+Un utilisateur connecté saisit le numéro à associer à son compte. Le serveur récupère l'adresse e-mail depuis la session Supabase Auth, envoie un code à 6 chiffres à cette adresse, puis n'active la visibilité du numéro qu'après validation. Le code expire au bout de 10 minutes; les demandes sont limitées à une par minute et les essais à cinq.
+
+Le répertoire public et la synchronisation des contacts ne reconnaissent que les numéros ayant `phone_verified_at` et `registered_phone` renseignés. Une recherche exacte par numéro utilise la fonction `find_user_by_registered_phone`.
+
+## Déploiement requis
+1. Appliquer les migrations `20261021140000_email_verified_phone_registration.sql` et `20261021140100_phone_directory_lookup.sql` au projet Supabase.
+2. Déployer l'Edge Function `phone-registration` avec la vérification JWT activée.
+3. Configurer les secrets `RESEND_API_KEY` et `PHONE_OTP_FROM_EMAIL`. L'expéditeur doit appartenir à un domaine vérifié dans Resend. L'environnement Supabase fournit `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY`; ne jamais exposer la clé service-role dans Flutter.
+4. Tester avec deux comptes : un numéro non validé ne doit pas apparaître; après saisie du code reçu sur l'e-mail du compte, la recherche et la synchronisation de contacts doivent retrouver ce compte.
+
+## Limite avant mise en production
+Le code et les migrations sont ajoutés au dépôt. L'envoi réel des e-mails nécessite encore la configuration de Resend et le déploiement de la fonction sur Supabase. Les numéros historiques ne deviennent pas automatiquement validés : chaque utilisateur doit suivre ce processus.

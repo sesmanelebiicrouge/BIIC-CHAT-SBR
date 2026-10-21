@@ -127,6 +127,9 @@ jobs:
           <meta name="twitter:description" content="BIIC CHAT SBR espace NOUCHI — messagerie instantanée pour échanger des messages, créer des groupes et partager des médias.">
           <meta name="twitter:image" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png">
           <script type="application/ld+json">
+          {"@context":"https://schema.org","@type":"WebSite","name":"BIIC CHAT SBR espace NOUCHI","alternateName":["BIIC CHAT","BigChat"],"url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/"}
+          </script>
+          <script type="application/ld+json">
           {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT SBR espace NOUCHI","alternateName":["BIIC CHAT","BigChat"],"applicationCategory":"CommunicationApplication","operatingSystem":"Android, iOS, Web","description":"BIIC CHAT SBR espace NOUCHI est une application de messagerie instantanée permettant d’échanger des messages, de créer des groupes et de partager des médias en ligne.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png"}
           </script>
           </head>''')

@@ -381,28 +381,29 @@ class _ChatPageState extends State<ChatPage> {
   Future<void> _startVideoCall() => _startExternalCall('video');
 
   Future<void> _startExternalCall(String callType) async {
-    // Keep a record of the attempt. Jitsi is still opened externally; this
-    // does not implement incoming-call signalling or prove the other person joined.
-    try {
-      await CallHistoryService().recordOutgoingCall(
-        conversationId: widget.conversationId,
-        callType: callType,
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('L’appel peut être lancé, mais son historique n’a pas pu être enregistré : $e')),
-        );
-      }
-    }
     final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
     final uri = Uri.parse('https://meet.jit.si/$room');
     try {
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!opened && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Impossible de démarrer l’appel ${callType == 'audio' ? 'audio' : 'vidéo'}.')),
+      if (!opened) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Impossible de démarrer l’appel ${callType == 'audio' ? 'audio' : 'vidéo'}.')),
+          );
+        }
+        return;
+      }
+      try {
+        await CallHistoryService().recordOutgoingCall(
+          conversationId: widget.conversationId,
+          callType: callType,
         );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('L’appel a été ouvert, mais son historique n’a pas pu être enregistré : $e')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -932,7 +933,7 @@ class _ChatPageState extends State<ChatPage> {
                   const SizedBox(width: 8),
                   IconButton.filled(
                     tooltip: _editingMessageId != null ? 'Enregistrer' : 'Envoyer',
-                    onPressed: _sending || _uploading ? null : _send,
+                    onPressed: _sending || _uploading || _recording ? null : _send,
                     icon: _sending
                         ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                         : Icon(_editingMessageId != null ? Icons.check : Icons.send),

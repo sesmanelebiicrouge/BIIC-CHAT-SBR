@@ -8,7 +8,7 @@ Ce document distingue les vérifications effectuées à distance des contrôles 
 
 - Le dépôt Flutter contient les modules d'authentification, conversations, pièces jointes, contacts, statuts, signalement/blocage et historique des appels.
 - Le pipeline Flutter CI a terminé avec succès sur la version vérifiée : analyse/tests et build Web/Android debug.
-- Le workflow de déploiement a été renforcé dans cette branche : le build/les tests de PR utilisent un jeton GitHub en lecture seule ; seul un job de déploiement déclenché depuis `main` reçoit `contents: write`. Les builds de branches différentes ne s'annulent plus mutuellement.
+- Les workflows CI et de déploiement ont été renforcés dans cette branche : les tests et builds de PR utilisent un jeton GitHub en lecture seule et désactivent la persistance des identifiants de checkout ; seul un job de déploiement déclenché depuis `main` reçoit `contents: write`. Les builds de branches différentes ne s'annulent plus mutuellement.
 - Le déploiement GitHub Pages a terminé avec succès. URL : https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/
 - Le projet Supabase répond et son historique distant comporte des migrations jusqu'à `20261021182947`.
 - Les Edge Functions `send-sms` et `phone-registration` sont présentes et actives. Leur état « actif » ne prouve pas que tous les secrets Orange, le hook SMS Auth ou les crédits fournisseur sont correctement configurés.

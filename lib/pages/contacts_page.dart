@@ -21,35 +21,30 @@ class _ContactsPageState extends State<ContactsPage> {
   bool _loading = false;
 
   Future<void> _import() async {
-    if (kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sur le Web, recherchez les membres BIIC CHAT par leur nom ou numéro. L’import du répertoire est disponible sur Android/iOS.'),
+    // On the Web, the browser's own contact picker is the consent step. It
+    // must open directly from the tap, without an earlier asynchronous dialog.
+    if (!kIsWeb) {
+      final consent = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Autoriser l’accès aux contacts ?'),
+          content: const Text(
+            'BIIC CHAT peut lire les noms et numéros de votre répertoire pour repérer les personnes inscrites et vous permettre de démarrer une discussion. Les contacts ne sont importés qu’après votre accord et l’autorisation du système. Vous pouvez refuser et continuer à rechercher des membres manuellement.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Pas maintenant'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Continuer'),
+            ),
+          ],
         ),
       );
-      return;
+      if (consent != true || !mounted) return;
     }
-
-    final consent = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Autoriser l’accès aux contacts ?'),
-        content: const Text(
-          'BIIC CHAT peut lire les noms et numéros de votre répertoire pour repérer les personnes inscrites et vous permettre de démarrer une discussion. Les contacts ne sont importés qu’après votre accord et l’autorisation du système. Vous pouvez refuser et continuer à rechercher des membres manuellement.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Pas maintenant'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Continuer'),
-          ),
-        ],
-      ),
-    );
-    if (consent != true || !mounted) return;
 
     setState(() => _loading = true);
     try {
@@ -59,15 +54,14 @@ class _ContactsPageState extends State<ContactsPage> {
       final available = items.where((item) => item.isOnBiicChat).length;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            '$available contact(s) utilisent déjà BIIC CHAT.',
-          ),
+          content: Text('$available contact(s) utilisent déjà BIIC CHAT.'),
         ),
       );
     } catch (e) {
       if (mounted) {
+        final message = e.toString().replaceFirst('Unsupported operation: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          SnackBar(content: Text(message)),
         );
       }
     } finally {
@@ -174,17 +168,18 @@ class _ContactsPageState extends State<ContactsPage> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Importez vos contacts pour identifier ceux qui ont déjà un compte et ouvrir directement une discussion.',
+                      'Choisissez les contacts de votre répertoire pour identifier ceux qui ont déjà un compte et ouvrir directement une discussion.',
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-                    if (!kIsWeb)
-                      FilledButton.icon(
-                        onPressed: _loading ? null : _import,
-                        icon: const Icon(Icons.sync),
-                        label: const Text('Importer mes contacts'),
+                    FilledButton.icon(
+                      onPressed: _loading ? null : _import,
+                      icon: const Icon(Icons.contacts_outlined),
+                      label: Text(
+                        kIsWeb ? 'Choisir dans le répertoire' : 'Importer mes contacts',
                       ),
-                    if (!kIsWeb) const SizedBox(height: 8),
+                    ),
+                    const SizedBox(height: 8),
                     OutlinedButton.icon(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
@@ -206,15 +201,19 @@ class _ContactsPageState extends State<ContactsPage> {
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: _loading || kIsWeb ? null : _import,
+                          onPressed: _loading ? null : _import,
                           icon: _loading
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(strokeWidth: 2),
                                 )
-                              : const Icon(Icons.sync),
-                          label: Text(_loading ? 'Importation...' : 'Actualiser'),
+                              : const Icon(Icons.contacts_outlined),
+                          label: Text(
+                            _loading
+                                ? 'Importation...'
+                                : (kIsWeb ? 'Choisir les contacts' : 'Actualiser'),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),

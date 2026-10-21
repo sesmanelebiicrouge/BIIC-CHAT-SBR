@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:biic_chat_sbr/config/app_config.dart';
 
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});
 
   bool _isAdmin() {
     final user = Supabase.instance.client.auth.currentUser;
-    return AppConfig.allowGuestAccess || user?.appMetadata['role'] == 'admin';
+    return user?.appMetadata['role'] == 'admin';
   }
 
   @override
   Widget build(BuildContext context) {
     final user = Supabase.instance.client.auth.currentUser;
+
     if (!_isAdmin()) {
       return Scaffold(
         appBar: AppBar(title: const Text('Administration BIIC CHAT')),
@@ -24,13 +24,18 @@ class AdminPage extends StatelessWidget {
               children: [
                 Icon(Icons.lock_outline, size: 64),
                 SizedBox(height: 16),
-                Text('Accès administrateur requis',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                    textAlign: TextAlign.center),
+                Text(
+                  'Accès administrateur requis',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
                 SizedBox(height: 10),
                 Text(
-                  'Cette zone est réservée au compte BIIC CHAT marqué administrateur. '
-                  'Aucun compte public ne peut obtenir cet accès depuis cette page.',
+                  'Cette zone est réservée aux comptes dont le rôle '
+                  'administrateur est attribué côté serveur.',
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -47,15 +52,23 @@ class AdminPage extends StatelessWidget {
         children: [
           Card(
             child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.admin_panel_settings)),
+              leading: const CircleAvatar(
+                child: Icon(Icons.admin_panel_settings),
+              ),
               title: const Text('Mode administrateur'),
-              subtitle: Text(user?.phone ?? user?.email ?? 'Compte administrateur (mode démonstration)'),
+              subtitle: Text(
+                user?.phone ??
+                    user?.email ??
+                    'Compte administrateur',
+              ),
               trailing: const Icon(Icons.verified),
             ),
           ),
           const SizedBox(height: 12),
-          const Text('Contrôles de pré-publication',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+          const Text(
+            'Contrôles de pré-publication',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          ),
           const SizedBox(height: 10),
           const _CheckTile('Authentification et OTP'),
           const _CheckTile('Profils utilisateurs'),
@@ -65,8 +78,9 @@ class AdminPage extends StatelessWidget {
           const _CheckTile('Sécurité Supabase / RLS'),
           const SizedBox(height: 18),
           const Text(
-            'Cette page est volontairement protégée par app_metadata.role = admin. '
-            'Le mode démonstration autorise un accès temporaire pour validation sans compte utilisateur.',
+            'Le rôle administrateur est vérifié à partir des métadonnées '
+            'définies côté serveur. Cette vérification dans l’interface ne '
+            'remplace jamais les contrôles d’autorisation dans la base de données.',
             style: TextStyle(color: Colors.black54),
           ),
         ],
@@ -77,6 +91,7 @@ class AdminPage extends StatelessWidget {
 
 class _CheckTile extends StatelessWidget {
   final String label;
+
   const _CheckTile(this.label);
 
   @override

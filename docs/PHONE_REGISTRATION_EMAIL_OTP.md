@@ -1,7 +1,7 @@
 # Enregistrement du numéro par e-mail — BIIC CHAT
 
 ## Fonctionnement
-Un utilisateur connecté saisit le numéro à associer à son compte. Le serveur récupère l'adresse e-mail depuis la session Supabase Auth, envoie un code à 6 chiffres à cette adresse, puis n'active la visibilité du numéro qu'après validation. Le code expire au bout de 10 minutes; les demandes sont limitées à une par minute et les essais à cinq.
+Un utilisateur connecté saisit le numéro à associer à son compte. Pour les nouveaux comptes créés par téléphone, l’adresse e-mail est enregistrée au moment de l’inscription dans le profil privé. Le serveur utilise cette adresse (ou l’adresse Supabase Auth pour les comptes e-mail existants), envoie un code à 6 chiffres, puis n’active la visibilité du numéro qu’après validation. Le code expire au bout de 10 minutes; les demandes sont limitées à une par minute et les essais à cinq.
 
 Lors de la création d’un compte par téléphone, l’adresse e-mail de validation est demandée et enregistrée dans le profil privé. Les anciens comptes sans e-mail peuvent en saisir un dans le parcours d’enregistrement du numéro; cette adresse n’est enregistrée qu’après validation du code reçu. Le code est lié au compte, au numéro et à l’adresse e-mail, expire après 10 minutes, et les tentatives sont limitées.
 

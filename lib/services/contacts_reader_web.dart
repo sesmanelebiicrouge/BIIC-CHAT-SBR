@@ -41,7 +41,7 @@ Future<List<Map<String, String>>> readDeviceContacts() async {
 
   final result = <Map<String, String>>[];
   for (final rawContact in selected.toDart) {
-    final contact = _BrowserContact(rawContact);
+    final contact = _BrowserContact._(rawContact);
     final names = contact.name?.toDart ?? const <JSString>[];
     final phones = contact.tel?.toDart ?? const <JSString>[];
     final name = names.isNotEmpty ? names.first.toDart : '';

@@ -25,6 +25,8 @@ class _ChatPageState extends State<ChatPage> {
   final _controller = TextEditingController();
   bool _sending = false;
   bool _uploading = false;
+  Map<String, dynamic>? _replyToMessage;
+  String? _editingMessageId;
   final Set<String> _readMarked = <String>{};
 
   Future<void> _markIncomingAsRead(
@@ -55,11 +57,162 @@ class _ChatPageState extends State<ChatPage> {
     if (text.isEmpty || user == null) return;
     setState(() => _sending = true);
     try {
-      await _service.sendMessage(conversationId: widget.conversationId, senderId: user.id, content: text);
+      final editingId = _editingMessageId;
+      if (editingId != null) {
+        await _service.editMessage(messageId: editingId, content: text);
+      } else {
+        await _service.sendMessage(
+          conversationId: widget.conversationId,
+          senderId: user.id,
+          content: text,
+          replyToMessageId: _replyToMessage?['id']?.toString(),
+        );
+      }
       _controller.clear();
+      if (mounted) {
+        setState(() {
+          _replyToMessage = null;
+          _editingMessageId = null;
+        });
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Envoi impossible : $e')));
     } finally { if (mounted) setState(() => _sending = false); }
+  }
+
+  void _beginReply(Map<String, dynamic> message) {
+    setState(() {
+      _editingMessageId = null;
+      _replyToMessage = message;
+      _controller.clear();
+    });
+  }
+
+  void _beginEdit(Map<String, dynamic> message) {
+    setState(() {
+      _replyToMessage = null;
+      _editingMessageId = message['id']?.toString();
+      _controller.text = message['content'] as String? ?? '';
+    });
+  }
+
+  Future<void> _deleteMessage(Map<String, dynamic> message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Supprimer le message ?'),
+        content: const Text('Le message sera remplacé par une indication de suppression pour les participants.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Supprimer')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _service.deleteMessage(message['id'].toString());
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression impossible : $e')));
+    }
+  }
+
+  Future<void> _chooseReaction(Map<String, dynamic> message) async {
+    const reactions = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '👏'];
+    final reaction = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: reactions.map((emoji) => ActionChip(
+              label: Text(emoji, style: const TextStyle(fontSize: 24)),
+              onPressed: () => Navigator.pop(sheetContext, emoji),
+            )).toList(),
+          ),
+        ),
+      ),
+    );
+    if (reaction == null) return;
+    try {
+      await _service.setReaction(messageId: message['id'].toString(), reaction: reaction);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Réaction impossible : $e')));
+    }
+  }
+
+  Future<void> _togglePin(Map<String, dynamic> message) async {
+    try {
+      await _service.setMessagePinned(
+        messageId: message['id'].toString(),
+        pinned: message['is_pinned'] != true,
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Épinglage impossible : $e')));
+    }
+  }
+
+  Future<void> _showMessageActions(Map<String, dynamic> message, bool mine) async {
+    if (message['deleted_at'] != null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.reply),
+              title: const Text('Répondre'),
+              onTap: () { Navigator.pop(sheetContext); _beginReply(message); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_emotions_outlined),
+              title: const Text('Réagir'),
+              onTap: () { Navigator.pop(sheetContext); _chooseReaction(message); },
+            ),
+            if (mine && (message['media_url'] == null || (message['content'] as String? ?? '').isNotEmpty))
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Modifier le texte'),
+                onTap: () { Navigator.pop(sheetContext); _beginEdit(message); },
+              ),
+            if (mine)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Supprimer le message'),
+                onTap: () { Navigator.pop(sheetContext); _deleteMessage(message); },
+              ),
+            if (mine)
+              ListTile(
+                leading: Icon(message['is_pinned'] == true ? Icons.push_pin : Icons.push_pin_outlined),
+                title: Text(message['is_pinned'] == true ? 'Désépingler' : 'Épingler'),
+                onTap: () { Navigator.pop(sheetContext); _togglePin(message); },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _archiveConversation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Archiver cette discussion ?'),
+        content: const Text('La discussion sera masquée de la liste principale. Vous pourrez la retrouver dans les discussions archivées.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Archiver')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _service.archiveConversation(widget.conversationId);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Archivage impossible : $e')));
+    }
   }
 
   Future<void> _startAudioCall() => _startExternalCall('audio');

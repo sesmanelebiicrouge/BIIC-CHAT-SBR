@@ -58,6 +58,7 @@ jobs:
               "NSMicrophoneUsageDescription": "BIIC CHAT utilise le microphone pour les messages vocaux et les appels.",
               "NSPhotoLibraryUsageDescription": "BIIC CHAT utilise vos photos lorsque vous choisissez un média à envoyer.",
               "NSContactsUsageDescription": "BIIC CHAT utilise vos contacts uniquement lorsque vous choisissez de les importer ou partager.",
+              "NSLocationWhenInUseUsageDescription": "BIIC CHAT utilise votre position uniquement lorsque vous choisissez de la partager dans une discussion.",
           }
           insert = ""
           for key, value in permissions.items():
@@ -65,6 +66,30 @@ jobs:
                   insert += f"\n\t<key>{key}</key>\n\t<string>{value}</string>"
           s = s.replace("</dict>", insert + "\n</dict>", 1)
           p.write_text(s)
+          PY
+
+      - name: Enable required permission_handler iOS capabilities
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("ios/Podfile")
+          s = p.read_text()
+          marker = "flutter_additional_ios_build_settings(target)"
+          if marker not in s:
+              raise SystemExit("Unable to locate the Flutter iOS Podfile post_install hook")
+          if "PERMISSION_LOCATION=1" not in s:
+              addition = marker + """
+                target.build_configurations.each do |config|
+                  config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= ['$(inherited)']
+                  config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] += [
+                    'PERMISSION_CAMERA=1',
+                    'PERMISSION_CONTACTS=1',
+                    'PERMISSION_LOCATION=1',
+                  ]
+                end
+              """
+              s = s.replace(marker, addition, 1)
+              p.write_text(s)
           PY
 
       - name: Install dependencies

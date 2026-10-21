@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
+/// Draws the BIIC CHAT logo with Flutter primitives instead of SVG text,
+/// which is not consistently rendered by all Flutter Web engines.
 class BiicBrand extends StatelessWidget {
   final double iconSize;
   final bool showSubtitle;
@@ -8,35 +9,27 @@ class BiicBrand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(iconSize * .28),
-          child: SvgPicture.asset(
-            'assets/biic_logo.svg',
-            width: iconSize,
-            height: iconSize,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'BIIC CHAT',
-              style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: .3),
-            ),
-            if (showSubtitle)
-              const Text(
-                'SBR • Messagerie',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF777777)),
-              ),
-          ],
-        ),
-      ],
-    );
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      SizedBox(width: iconSize, height: iconSize, child: DecoratedBox(
+        decoration: BoxDecoration(color: const Color(0xFFD71920), borderRadius: BorderRadius.circular(iconSize * .22)),
+        child: Center(child: Container(
+          width: iconSize * .66, height: iconSize * .66,
+          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+          child: Center(child: Container(
+            width: iconSize * .58, height: iconSize * .58,
+            decoration: const BoxDecoration(color: Color(0xFFD71920), shape: BoxShape.circle),
+            child: Center(child: FittedBox(fit: BoxFit.scaleDown, child: Text('SBR', maxLines: 1, style: TextStyle(
+              color: Colors.white, fontSize: iconSize * .225, fontWeight: FontWeight.w900, letterSpacing: iconSize * .002,
+            )))),
+          )),
+        )),
+      )),
+      const SizedBox(width: 12),
+      Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('BIIC CHAT', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: .3)),
+        if (showSubtitle) const Text('SBR • Messagerie', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF777777))),
+      ]),
+    ]);
   }
 }
 

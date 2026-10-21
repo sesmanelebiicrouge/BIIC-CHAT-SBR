@@ -15,6 +15,7 @@ Version cliente préparée : **1.0.2+8**. Les tests et builds de la nouvelle ré
 - Tests automatisés de la configuration publique Supabase.
 - Import de contacts découpé en lots de 500, avec tests des limites de lot.
 - Parcours de validation du numéro par code e-mail, avec e-mail de validation conservé dans le profil privé.
+- Partage ponctuel de position et invitation SMS des contacts non inscrits.
 - Validation des fichiers joints côté service et nettoyage des médias orphelins en cas d’échec d’enregistrement.
 
 ## À configurer avant publication

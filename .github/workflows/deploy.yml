@@ -132,7 +132,7 @@ jobs:
               f'https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png?v={build_id}"'
           )
           s = s.replace("</head>", f'<link rel="apple-touch-icon" href="biic_logo_192.png?v={build_id}">\\n</head>')
-                    s = s.replace("<body>", '''<body>
+          s = s.replace("<body>", '''<body>
           <noscript>
             <main>
               <h1>BIIC CHAT (BigChat)</h1>

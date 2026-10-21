@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:record/record.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,6 +26,10 @@ class _ChatPageState extends State<ChatPage> {
   final _devicePermissions = DevicePermissionsService();
   final _locationShare = LocationShareService();
   final _controller = TextEditingController();
+  final _recorder = AudioRecorder();
+  StreamSubscription<Uint8List>? _recordingSubscription;
+  final _recordedAudio = BytesBuilder(copy: false);
+  bool _recording = false;
   bool _sending = false;
   bool _uploading = false;
   Map<String, dynamic>? _replyToMessage;
@@ -213,6 +220,133 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Archivage impossible : $e')));
     }
+  }
+
+  Future<void> _toggleVoiceRecording() async {
+    if (_recording) {
+      await _finishVoiceRecording();
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Enregistrer un message vocal ?'),
+        content: const Text('BIIC CHAT utilisera le microphone pendant l’enregistrement. Le fichier audio ne sera envoyé aux participants qu’après avoir arrêté puis confirmé l’envoi.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Autoriser')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      if (!kIsWeb) await _devicePermissions.requestMicrophone();
+      if (!await _recorder.hasPermission()) {
+        throw StateError('Autorisez le microphone pour enregistrer un message vocal.');
+      }
+      _recordedAudio.clear();
+      final stream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+      );
+      _recordingSubscription = stream.listen(
+        _recordedAudio.add,
+        onError: (Object error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erreur d’enregistrement : $error')),
+            );
+          }
+        },
+      );
+      if (mounted) setState(() => _recording = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de démarrer l’enregistrement : $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _finishVoiceRecording() async {
+    try {
+      await _recorder.stop();
+      await _recordingSubscription?.cancel();
+      _recordingSubscription = null;
+      final pcm = _recordedAudio.takeBytes();
+      if (pcm.isEmpty) {
+        if (mounted) setState(() => _recording = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aucun son enregistré.')),
+          );
+        }
+        return;
+      }
+      final wav = _wrapPcmAsWav(pcm, sampleRate: 16000, channels: 1, bitsPerSample: 16);
+      if (!mounted) return;
+      final send = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Envoyer le message vocal ?'),
+          content: Text('Durée approximative : ${(pcm.length / (16000 * 2)).toStringAsFixed(1)} seconde(s).'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Supprimer')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Envoyer')),
+          ],
+        ),
+      );
+      if (send == true) {
+        await _upload('vocal_${DateTime.now().millisecondsSinceEpoch}.wav', wav, 'audio/wav');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de terminer le message vocal : $e')),
+        );
+      }
+    } finally {
+      _recordedAudio.clear();
+      if (mounted) setState(() => _recording = false);
+    }
+  }
+
+  Uint8List _wrapPcmAsWav(
+    Uint8List pcm, {
+    required int sampleRate,
+    required int channels,
+    required int bitsPerSample,
+  }) {
+    final header = ByteData(44);
+    void ascii(int offset, String value) {
+      for (var i = 0; i < value.length; i++) {
+        header.setUint8(offset + i, value.codeUnitAt(i));
+      }
+    }
+
+    final byteRate = sampleRate * channels * bitsPerSample ~/ 8;
+    final blockAlign = channels * bitsPerSample ~/ 8;
+    ascii(0, 'RIFF');
+    header.setUint32(4, 36 + pcm.length, Endian.little);
+    ascii(8, 'WAVE');
+    ascii(12, 'fmt ');
+    header.setUint32(16, 16, Endian.little);
+    header.setUint16(20, 1, Endian.little);
+    header.setUint16(22, channels, Endian.little);
+    header.setUint32(24, sampleRate, Endian.little);
+    header.setUint32(28, byteRate, Endian.little);
+    header.setUint16(32, blockAlign, Endian.little);
+    header.setUint16(34, bitsPerSample, Endian.little);
+    ascii(36, 'data');
+    header.setUint32(40, pcm.length, Endian.little);
+    final bytes = Uint8List(44 + pcm.length);
+    bytes.setRange(0, 44, header.buffer.asUint8List());
+    bytes.setRange(44, bytes.length, pcm);
+    return bytes;
   }
 
   Future<void> _startAudioCall() => _startExternalCall('audio');
@@ -713,8 +847,16 @@ class _ChatPageState extends State<ChatPage> {
                 children: [
                   IconButton(
                     tooltip: 'Joindre un fichier',
-                    onPressed: _uploading || _editingMessageId != null ? null : _attachments,
+                    onPressed: _uploading || _editingMessageId != null || _recording ? null : _attachments,
                     icon: const Icon(Icons.add_circle_outline),
+                  ),
+                  IconButton(
+                    tooltip: _recording ? 'Arrêter et envoyer le vocal' : 'Enregistrer un message vocal',
+                    onPressed: _sending || _uploading || _editingMessageId != null
+                        ? null
+                        : _toggleVoiceRecording,
+                    color: _recording ? Colors.red : null,
+                    icon: Icon(_recording ? Icons.stop_circle_outlined : Icons.mic_none_outlined),
                   ),
                   Expanded(
                     child: TextField(
@@ -749,7 +891,12 @@ class _ChatPageState extends State<ChatPage> {
       ),
     );
   }
-  @override void dispose(){_controller.dispose();super.dispose();}
+  @override void dispose(){
+    _controller.dispose();
+    unawaited(_recordingSubscription?.cancel() ?? Future<void>.value());
+    unawaited(_recorder.dispose());
+    super.dispose();
+  }
 }
 class _MediaBubble extends StatelessWidget {
   final String path; final String type; final Future<String> Function(String) signedUrl; final bool mine;
@@ -759,7 +906,81 @@ class _MediaBubble extends StatelessWidget {
       if (snapshot.connectionState == ConnectionState.waiting) return const SizedBox(width:180,height:120,child:Center(child:CircularProgressIndicator()));
       final url = snapshot.data; if (url == null) return const Text('Pièce jointe indisponible.');
       if (type.startsWith('image/')) return ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(url, width: 220, height: 220, fit: BoxFit.cover, errorBuilder: (_,__,___)=>const Text('Image indisponible.')));
+      if (type.startsWith('audio/')) return _AudioBubble(url: url, mine: mine);
       return Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.insert_drive_file, color: mine ? Theme.of(context).colorScheme.onPrimary : null), const SizedBox(width: 8), Flexible(child: Text(path.split('/').last, overflow: TextOverflow.ellipsis))]);
     });
+  }
+}
+
+
+class _AudioBubble extends StatefulWidget {
+  const _AudioBubble({required this.url, required this.mine});
+  final String url;
+  final bool mine;
+
+  @override
+  State<_AudioBubble> createState() => _AudioBubbleState();
+}
+
+class _AudioBubbleState extends State<_AudioBubble> {
+  final AudioPlayer _player = AudioPlayer();
+  StreamSubscription<PlayerState>? _subscription;
+  bool _playing = false;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = _player.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _playing = state == PlayerState.playing);
+    });
+  }
+
+  Future<void> _toggle() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      if (_playing) {
+        await _player.pause();
+      } else {
+        await _player.play(UrlSource(widget.url));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lecture audio impossible : $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = widget.mine
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: _playing ? 'Mettre en pause' : 'Écouter le message vocal',
+          onPressed: _loading ? null : _toggle,
+          icon: _loading
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(_playing ? Icons.pause_circle_filled : Icons.play_circle_fill),
+          color: foreground,
+        ),
+        Flexible(child: Text('Message vocal', style: TextStyle(color: foreground))),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel() ?? Future<void>.value());
+    unawaited(_player.dispose());
+    super.dispose();
   }
 }

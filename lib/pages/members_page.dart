@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/members_service.dart';
 import '../services/conversation_service.dart';
@@ -17,6 +18,30 @@ class _MembersPageState extends State<MembersPage> {
   final _search = TextEditingController();
   late Future<List<Map<String, dynamic>>> _future;
   Set<String> _blockedIds = <String>{};
+  Timer? _phoneSearchTimer;
+  Map<String, dynamic>? _phoneResult;
+  bool _phoneSearchLoading = false;
+
+  void _onSearchChanged(String value) {
+    setState(() {});
+    _phoneSearchTimer?.cancel();
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length < 8) {
+      setState(() => _phoneResult = null);
+      return;
+    }
+    _phoneSearchTimer = Timer(const Duration(milliseconds: 450), () async {
+      if (mounted) setState(() => _phoneSearchLoading = true);
+      try {
+        final result = await _service.findByRegisteredPhone(value);
+        if (mounted) setState(() => _phoneResult = result);
+      } catch (_) {
+        if (mounted) setState(() => _phoneResult = null);
+      } finally {
+        if (mounted) setState(() => _phoneSearchLoading = false);
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -287,9 +312,9 @@ class _MembersPageState extends State<MembersPage> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: TextField(
               controller: _search,
-              onChanged: (_) => setState(() {}),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
-                hintText: 'Rechercher un membre...',
+                hintText: 'Rechercher par nom ou numéro BIIC CHAT...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _search.text.isEmpty
                     ? null
@@ -330,13 +355,25 @@ class _MembersPageState extends State<MembersPage> {
                   if (id == null || id == me || _blockedIds.contains(id)) {
                     return false;
                   }
-                  final name =
-                      (m['display_name'] as String? ?? '').toLowerCase();
+                  final name = (m['display_name'] as String? ?? '').toLowerCase();
                   return query.isEmpty || name.contains(query);
                 }).toList();
+                final phoneResult = _phoneResult;
+                if (phoneResult != null) {
+                  final resultId = phoneResult['id'] as String?;
+                  if (resultId != null &&
+                      resultId != me &&
+                      !_blockedIds.contains(resultId) &&
+                      !members.any((m) => m['id'] == resultId)) {
+                    members.insert(0, phoneResult);
+                  }
+                }
 
+                if (_phoneSearchLoading && members.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
                 if (members.isEmpty) {
-                  return const Center(child: Text('Aucun membre correspondant.'));
+                  return const Center(child: Text('Aucun membre correspondant. Seuls les numéros enregistrés et validés sur BIIC CHAT peuvent être trouvés.'));
                 }
 
                 return ListView.separated(
@@ -376,6 +413,7 @@ class _MembersPageState extends State<MembersPage> {
 
   @override
   void dispose() {
+    _phoneSearchTimer?.cancel();
     _search.dispose();
     super.dispose();
   }

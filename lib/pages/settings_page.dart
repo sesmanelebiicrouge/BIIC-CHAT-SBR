@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../widgets/biic_brand.dart';
 import 'profile_page.dart';
 import 'blocked_contacts_page.dart';
+import 'phone_registration_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -121,6 +122,7 @@ class _SettingsPageState extends State<SettingsPage> {
       const ListTile(title:Text('Compte',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
       ListTile(leading:const Icon(Icons.person_outline),title:const Text('Profil'),subtitle:const Text('Photo, nom, bio et statut'),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const ProfilePage()))),
       ListTile(leading:const Icon(Icons.phone_android),title:const Text('Changer de numéro'),subtitle:Text(user?.phone??'Numéro actuel'),onTap:_loading?null:_changePhone),
+      ListTile(leading:const Icon(Icons.verified_user_outlined),title:const Text('Enregistrer mon numéro BIIC CHAT'),subtitle:const Text('Valider le numéro avec le code envoyé à votre e-mail'),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const PhoneRegistrationPage()))),
       const Divider(),
       const ListTile(title:Text('Conversations',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
       const ListTile(leading:Icon(Icons.chat_bubble_outline),title:Text('Paramètres des conversations'),subtitle:Text('Gérez les discussions depuis BIIC CHAT.')),

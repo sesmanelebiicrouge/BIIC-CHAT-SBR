@@ -227,6 +227,21 @@ jobs:
             --pwa-strategy=none \
             --base-href "/BIIC-CHAT-SBR/"
 
+      - name: Version Flutter Web entrypoints to refresh cached releases
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          build_id = os.environ.get("GITHUB_SHA", "latest")[:12]
+          index = Path("build/web/index.html")
+          html = index.read_text()
+          html = html.replace('src="flutter_bootstrap.js"', f'src="flutter_bootstrap.js?v={build_id}"')
+          index.write_text(html)
+          bootstrap = Path("build/web/flutter_bootstrap.js")
+          js = bootstrap.read_text()
+          js = js.replace("main.dart.js", f"main.dart.js?v={build_id}")
+          bootstrap.write_text(js)
+          PY
       - name: Verify Web release output
         run: |
           test -s build/web/index.html
@@ -245,6 +260,8 @@ jobs:
           grep -q '"shortcuts"' build/web/manifest.json
           grep -q 'Installer BIIC CHAT' build/web/index.html
           grep -q 'BIIC CHAT' build/web/index.html
+          grep -q 'flutter_bootstrap.js?v=' build/web/index.html
+          grep -q 'main.dart.js?v=' build/web/flutter_bootstrap.js
           grep -q 'BigChat' build/web/index.html
           grep -q 'alternateName' build/web/index.html
 

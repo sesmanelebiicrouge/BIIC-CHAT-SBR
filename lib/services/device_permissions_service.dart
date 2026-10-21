@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// Requests device permissions only when the user invokes the related feature.
 /// It deliberately does not request broad storage access: image_picker and
 /// file_picker use the platform's scoped pickers.
 class DevicePermissionsService {
-  Future<bool> _request(Permission permission, String feature) async {
+  Future<bool> _request(ph.Permission permission, String feature) async {
     if (kIsWeb) {
       throw UnsupportedError('$feature n’est pas disponible dans le navigateur.');
     }
@@ -24,18 +24,18 @@ class DevicePermissionsService {
     throw DevicePermissionDenied('Autorisez $feature pour utiliser cette fonctionnalité.');
   }
 
-  Future<bool> requestCamera() => _request(Permission.camera, 'la caméra');
-  Future<bool> requestMicrophone() => _request(Permission.microphone, 'le microphone');
-  Future<bool> requestContacts() => _request(Permission.contacts, 'les contacts');
+  Future<bool> requestCamera() => _request(ph.Permission.camera, 'la caméra');
+  Future<bool> requestMicrophone() => _request(ph.Permission.microphone, 'le microphone');
+  Future<bool> requestContacts() => _request(ph.Permission.contacts, 'les contacts');
   Future<bool> requestLocationWhileInUse() =>
-      _request(Permission.locationWhenInUse, 'la localisation pendant l’utilisation');
+      _request(ph.Permission.locationWhenInUse, 'la localisation pendant l’utilisation');
   Future<bool> requestCalendarReadWrite() =>
-      _request(Permission.calendarFullAccess, 'le calendrier');
+      _request(ph.Permission.calendarFullAccess, 'le calendrier');
   Future<bool> requestNotifications() =>
-      _request(Permission.notification, 'les notifications');
+      _request(ph.Permission.notification, 'les notifications');
 
   /// Opens the operating-system app settings after the user has been informed.
-  Future<bool> openAppSettings() => openAppSettings();
+  Future<bool> openAppSettings() => ph.openAppSettings();
 }
 
 class DevicePermissionDenied implements Exception {

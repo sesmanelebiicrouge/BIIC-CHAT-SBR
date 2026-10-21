@@ -11,7 +11,7 @@ class AuthPage extends StatefulWidget {
 }
 
 class _AuthPageState extends State<AuthPage> {
-  final _phone=TextEditingController(),_password=TextEditingController(),_confirmPassword=TextEditingController(),_name=TextEditingController(),_otp=TextEditingController();
+  final _phone=TextEditingController(),_password=TextEditingController(),_confirmPassword=TextEditingController(),_name=TextEditingController(),_otp=TextEditingController(),_registrationEmail=TextEditingController();
   final _auth=AuthService();
   _AuthMode _mode=_AuthMode.signIn;
   bool _loading=false,_obscurePassword=true;
@@ -62,12 +62,17 @@ class _AuthPageState extends State<AuthPage> {
     if(_password.text.length<6){_message('Le mot de passe doit contenir au moins 6 caractères.');return;}
     if(_isRegister&&_password.text!=_confirmPassword.text){_message('Les deux mots de passe ne correspondent pas.');return;}
     if(_isRegister&&(_name.text.trim().length<2||_name.text.trim().length>60)){_message('Le nom doit contenir entre 2 et 60 caractères.');return;}
+    final registrationEmail = _registrationEmail.text.trim().toLowerCase();
+    if (_isRegister && !_useEmail && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(registrationEmail)) {
+      _message('Entrez une adresse e-mail valide. Elle servira à valider votre numéro BIIC CHAT.');
+      return;
+    }
     setState(()=>_loading=true);
     try{
       if(_isRegister){
         final response = emailMode
             ? await _auth.signUpWithEmail(email:email,password:_password.text,displayName:_name.text)
-            : await _auth.signUp(phone:phone,password:_password.text,displayName:_name.text);
+            : await _auth.signUp(phone:phone,email:registrationEmail,password:_password.text,displayName:_name.text);
         if(!mounted)return;
         if(response.session!=null){_message('Compte créé. Bienvenue sur BIIC CHAT.');}
         else{
@@ -202,6 +207,17 @@ class _AuthPageState extends State<AuthPage> {
               ? _decoration('Adresse e-mail', Icons.email_outlined).copyWith(hintText: 'vous@exemple.com')
               : _decoration('Numéro de téléphone', Icons.phone_outlined).copyWith(hintText: '+225 07 00 00 00 00'),
         ),
+        if (_isRegister && !_useEmail) ...[
+          const SizedBox(height: 12),
+          TextField(
+            controller: _registrationEmail,
+            keyboardType: TextInputType.emailAddress,
+            autocorrect: false,
+            autofillHints: const [AutofillHints.email],
+            decoration: _decoration('Adresse e-mail de validation', Icons.email_outlined)
+                .copyWith(hintText: 'vous@exemple.com'),
+          ),
+        ],
         if (_mode != _AuthMode.forgotPassword) ...[
           const SizedBox(height: 12),
           TextField(
@@ -281,5 +297,5 @@ class _AuthPageState extends State<AuthPage> {
     _AuthMode.signIn=>'Se connecter',_AuthMode.register=>'Créer mon compte',_AuthMode.verifySignup||_AuthMode.verifyReset=>'Vérifier le code',
     _AuthMode.forgotPassword=>'Envoyer le code',_AuthMode.setNewPassword=>'Enregistrer le mot de passe'};
 
-  @override void dispose(){_phone.dispose();_password.dispose();_confirmPassword.dispose();_name.dispose();_otp.dispose();super.dispose();}
+  @override void dispose(){_phone.dispose();_password.dispose();_confirmPassword.dispose();_name.dispose();_otp.dispose();_registrationEmail.dispose();super.dispose();}
 }

@@ -103,7 +103,7 @@ jobs:
           import os
           build_id = os.environ.get("GITHUB_SHA", "latest")[:12]
           # Version browser-visible assets to avoid stale cached logos after deployment.
-          s = s.replace('href="favicon.png"', f'href="biic_logo.png?v={build_id}"')
+          # Keep favicon.png at a stable URL for search crawlers; the file itself is replaced below.
           s = s.replace('href="manifest.json"', f'href="manifest.json?v={build_id}"')
           s = s.replace(
               '<meta name="description" content="A new Flutter project.">',

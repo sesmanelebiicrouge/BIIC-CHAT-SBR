@@ -90,7 +90,9 @@ class ConversationService {
   }
 
   Stream<List<Map<String, dynamic>>> getUserConversations(String userId) {
-    if (userId.trim().isEmpty) return const Stream.empty();
+    final uid = userId.trim();
+    if (uid.isEmpty) return const Stream.empty();
+    _assertCallerIsAuthenticatedUser(uid);
     return _supabase
         .from('conversations')
         .stream(primaryKey: ['id'])

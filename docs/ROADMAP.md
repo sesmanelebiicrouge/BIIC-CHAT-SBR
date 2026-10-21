@@ -49,3 +49,4 @@ Ce document sépare ce qui existe dans le code des fonctionnalités qui demanden
 ## Limites de cette feuille de route
 
 Les changements sur une branche GitHub ne sont pas automatiquement déployés dans Supabase ou sur les téléphones. La validation e-mail, les notifications push, la configuration iOS, les secrets externes et les tests sur appareil nécessitent encore des étapes spécifiques avant la production.
+

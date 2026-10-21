@@ -18,11 +18,11 @@ grant all on public.phone_registration_codes to service_role;
 -- sync_device_contacts; this list does not expose phone numbers.
 create or replace function public.list_public_users()
 returns table(id uuid, display_name text, avatar_url text, bio text, status text)
-language sql security definer stable set search_path = public as $
+language sql security definer stable set search_path = public as $list_public_users$
  select u.id,u.display_name,u.avatar_url,u.bio,u.status from public.users u
  where auth.uid() is not null
  order by u.display_name;
-$;
+$list_public_users$;
 revoke all on function public.list_public_users() from public, anon;
 grant execute on function public.list_public_users() to authenticated;
 

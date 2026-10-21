@@ -1,11 +1,11 @@
 {
-  "name": "BIIC CHAT",
+  "name": "BIIC CHAT SBR espace NOUCHI",
   "short_name": "BIIC CHAT",
   "start_url": "/BIIC-CHAT-SBR/",
   "display": "standalone",
   "background_color": "#FFFFFF",
   "theme_color": "#D71920",
-  "description": "BIIC CHAT — messagerie instantanée.",
+  "description": "BIIC CHAT SBR espace NOUCHI — messagerie instantanée pour échanger des messages, créer des groupes et partager des médias en ligne.",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [

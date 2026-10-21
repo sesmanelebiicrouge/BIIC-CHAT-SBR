@@ -230,6 +230,62 @@ class _StatusPageState extends State<StatusPage> {
     }
   }
 
+  Future<void> _showStatusViews(Map<String, dynamic> status) async {
+    final id = status['id'] as String?;
+    if (id == null) return;
+    try {
+      final views = await _service.getStatusViews(id);
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: SizedBox(
+            height: MediaQuery.of(sheetContext).size.height * 0.55,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.visibility_outlined),
+                      const SizedBox(width: 10),
+                      Text('Vues du statut (${views.length})', style: Theme.of(sheetContext).textTheme.titleMedium),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: views.isEmpty
+                      ? const Center(child: Text('Personne n’a encore vu ce statut.'))
+                      : ListView.separated(
+                          itemCount: views.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1, indent: 72),
+                          itemBuilder: (context, index) {
+                            final view = views[index];
+                            final viewerId = view['viewer_id']?.toString() ?? '';
+                            return ListTile(
+                              leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+                              title: Text(_names[viewerId] ?? 'Utilisateur BIIC CHAT'),
+                              subtitle: Text(_timeLabel(view['viewed_at'])),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de charger les vues : $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _deleteStatus(Map<String, dynamic> status) async {
     final id = status['id'] as String?;
     if (id == null) return;
@@ -369,9 +425,27 @@ class _StatusPageState extends State<StatusPage> {
                               ].where((part) => part.isNotEmpty).join(' • '), maxLines: 2, overflow: TextOverflow.ellipsis),
                               trailing: isOwn
                                   ? PopupMenuButton<String>(
-                                      onSelected: (_) => _deleteStatus(status),
+                                      onSelected: (action) {
+                                        if (action == 'views') _showStatusViews(status);
+                                        if (action == 'delete') _deleteStatus(status);
+                                      },
                                       itemBuilder: (_) => const [
-                                        PopupMenuItem(value: 'delete', child: Text('Supprimer')),
+                                        PopupMenuItem(
+                                          value: 'views',
+                                          child: ListTile(
+                                            contentPadding: EdgeInsets.zero,
+                                            leading: Icon(Icons.visibility_outlined),
+                                            title: Text('Voir les vues'),
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: ListTile(
+                                            contentPadding: EdgeInsets.zero,
+                                            leading: Icon(Icons.delete_outline),
+                                            title: Text('Supprimer'),
+                                          ),
+                                        ),
                                       ],
                                     )
                                   : const Icon(Icons.chevron_right),

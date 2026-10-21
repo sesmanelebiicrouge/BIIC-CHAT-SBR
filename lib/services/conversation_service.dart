@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ConversationService {
@@ -93,11 +95,54 @@ class ConversationService {
     final uid = userId.trim();
     if (uid.isEmpty) return const Stream.empty();
     _assertCallerIsAuthenticatedUser(uid);
-    return _supabase
-        .from('conversations')
-        .stream(primaryKey: ['id'])
-        .order('updated_at', ascending: false)
-        .map((rows) => List<Map<String, dynamic>>.from(rows));
+    return Stream.multi((controller) {
+      List<Map<String, dynamic>>? conversations;
+      Set<String>? archivedIds;
+      void emitIfReady() {
+        if (conversations == null || archivedIds == null) return;
+        controller.add(
+          conversations!
+              .where((row) => !archivedIds!.contains(row['id']?.toString()))
+              .toList(),
+        );
+      }
+
+      final conversationsSubscription = _supabase
+          .from('conversations')
+          .stream(primaryKey: ['id'])
+          .order('updated_at', ascending: false)
+          .listen(
+        (rows) {
+          conversations = List<Map<String, dynamic>>.from(rows);
+          emitIfReady();
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          controller.addError(error, stackTrace);
+        },
+      );
+
+      final archivedSubscription = _supabase
+          .from('archived_conversations')
+          .stream(primaryKey: ['user_id', 'conversation_id'])
+          .eq('user_id', uid)
+          .listen(
+        (rows) {
+          archivedIds = rows
+              .map((row) => row['conversation_id']?.toString() ?? '')
+              .where((id) => id.isNotEmpty)
+              .toSet();
+          emitIfReady();
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          controller.addError(error, stackTrace);
+        },
+      );
+
+      controller.onCancel = () async {
+        await conversationsSubscription.cancel();
+        await archivedSubscription.cancel();
+      };
+    });
   }
 
   Future<void> sendMessage({
@@ -106,6 +151,7 @@ class ConversationService {
     required String content,
     String? mediaUrl,
     String? mediaType,
+    String? replyToMessageId,
   }) async {
     final text = content.trim();
     final media = mediaUrl?.trim();
@@ -123,7 +169,96 @@ class ConversationService {
       if (media != null && media.isNotEmpty) 'media_url': media,
       if (mediaType != null && mediaType.trim().isNotEmpty)
         'media_type': mediaType.trim(),
+      if (replyToMessageId != null && replyToMessageId.trim().isNotEmpty)
+        'reply_to_message_id': replyToMessageId.trim(),
     });
+  }
+
+
+  Future<void> editMessage({
+    required String messageId,
+    required String content,
+  }) async {
+    final userId = _requireAuthenticatedUserId();
+    final text = content.trim();
+    if (text.isEmpty || text.length > 4000) {
+      throw ArgumentError('Le message doit contenir entre 1 et 4 000 caractères.');
+    }
+    await _supabase.from('messages').update({
+      'content': text,
+      'edited_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', messageId).eq('sender_id', userId);
+  }
+
+  Future<void> deleteMessage(String messageId) async {
+    final userId = _requireAuthenticatedUserId();
+    await _supabase.from('messages').update({
+      'content': '',
+      'deleted_at': DateTime.now().toUtc().toIso8601String(),
+      'edited_at': DateTime.now().toUtc().toIso8601String(),
+      'is_pinned': false,
+    }).eq('id', messageId).eq('sender_id', userId);
+  }
+
+  Future<void> setMessagePinned({
+    required String messageId,
+    required bool pinned,
+  }) async {
+    final userId = _requireAuthenticatedUserId();
+    await _supabase.from('messages').update({
+      'is_pinned': pinned,
+    }).eq('id', messageId).eq('sender_id', userId);
+  }
+
+  Future<void> setReaction({
+    required String messageId,
+    required String reaction,
+  }) async {
+    final userId = _requireAuthenticatedUserId();
+    const allowed = {'👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '👏'};
+    if (!allowed.contains(reaction)) throw ArgumentError('Réaction non prise en charge.');
+    final existing = await _supabase
+        .from('message_reactions')
+        .select('reaction')
+        .eq('message_id', messageId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    if (existing != null && existing['reaction'] == reaction) {
+      await _supabase.from('message_reactions')
+          .delete().eq('message_id', messageId).eq('user_id', userId);
+    } else {
+      await _supabase.from('message_reactions').upsert({
+        'message_id': messageId,
+        'user_id': userId,
+        'reaction': reaction,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      }, onConflict: 'message_id,user_id');
+    }
+  }
+
+  Future<void> archiveConversation(String conversationId) async {
+    final userId = _requireAuthenticatedUserId();
+    await _supabase.from('archived_conversations').upsert({
+      'user_id': userId,
+      'conversation_id': conversationId,
+      'archived_at': DateTime.now().toUtc().toIso8601String(),
+    }, onConflict: 'user_id,conversation_id');
+  }
+
+  Future<void> unarchiveConversation(String conversationId) async {
+    final userId = _requireAuthenticatedUserId();
+    await _supabase.from('archived_conversations')
+        .delete().eq('user_id', userId).eq('conversation_id', conversationId);
+  }
+
+  Future<List<Map<String, dynamic>>> getArchivedConversations() async {
+    final userId = _requireAuthenticatedUserId();
+    final rows = await _supabase
+        .from('archived_conversations')
+        .select('conversation_id,archived_at')
+        .eq('user_id', userId)
+        .order('archived_at', ascending: false);
+    return List<Map<String, dynamic>>.from(rows);
   }
 
   Future<void> markMessagesRead({
@@ -156,6 +291,14 @@ class ConversationService {
         .from('messages')
         .stream(primaryKey: ['id'])
         .eq('conversation_id', conversationId.trim())
+        .order('created_at', ascending: true)
+        .map((rows) => List<Map<String, dynamic>>.from(rows));
+  }
+
+  Stream<List<Map<String, dynamic>>> watchMessageReactions() {
+    return _supabase
+        .from('message_reactions')
+        .stream(primaryKey: ['message_id', 'user_id'])
         .order('created_at', ascending: true)
         .map((rows) => List<Map<String, dynamic>>.from(rows));
   }

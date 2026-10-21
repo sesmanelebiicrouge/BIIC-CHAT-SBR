@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/contacts_service.dart';
 import '../services/conversation_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'chat_page.dart';
+import 'members_page.dart';
 
 class ContactsPage extends StatefulWidget {
-  const ContactsPage({super.key});
+  const ContactsPage({super.key, this.showAppBar = true});
+
+  final bool showAppBar;
   @override
   State<ContactsPage> createState() => _ContactsPageState();
 }
@@ -17,6 +21,36 @@ class _ContactsPageState extends State<ContactsPage> {
   bool _loading = false;
 
   Future<void> _import() async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sur le Web, recherchez les membres BIIC CHAT par leur nom ou numéro. L’import du répertoire est disponible sur Android/iOS.'),
+        ),
+      );
+      return;
+    }
+
+    final consent = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Autoriser l’accès aux contacts ?'),
+        content: const Text(
+          'BIIC CHAT peut lire les noms et numéros de votre répertoire pour repérer les personnes inscrites et vous permettre de démarrer une discussion. Les contacts ne sont importés qu’après votre accord et l’autorisation du système. Vous pouvez refuser et continuer à rechercher des membres manuellement.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Pas maintenant'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continuer'),
+          ),
+        ],
+      ),
+    );
+    if (consent != true || !mounted) return;
+
     setState(() => _loading = true);
     try {
       final items = await _contacts.importDeviceContacts();
@@ -120,7 +154,7 @@ class _ContactsPageState extends State<ContactsPage> {
     final notAvailable = _items.where((item) => !item.isOnBiicChat).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Contacts BIIC CHAT')),
+      appBar: widget.showAppBar ? AppBar(title: const Text('Contacts BIIC CHAT')) : null,
       body: _items.isEmpty && !_loading
           ? Center(
               child: Padding(
@@ -144,10 +178,21 @@ class _ContactsPageState extends State<ContactsPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-                    FilledButton.icon(
-                      onPressed: _import,
-                      icon: const Icon(Icons.sync),
-                      label: const Text('Importer mes contacts'),
+                    if (!kIsWeb)
+                      FilledButton.icon(
+                        onPressed: _loading ? null : _import,
+                        icon: const Icon(Icons.sync),
+                        label: const Text('Importer mes contacts'),
+                      ),
+                    if (!kIsWeb) const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MembersPage(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.search),
+                      label: const Text('Rechercher par nom ou numéro'),
                     ),
                   ],
                 ),
@@ -156,19 +201,35 @@ class _ContactsPageState extends State<ContactsPage> {
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: FilledButton.icon(
-                    onPressed: _loading ? null : _import,
-                    icon: _loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.sync),
-                    label: Text(_loading
-                        ? 'Importation...'
-                        : 'Actualiser mes contacts'),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _loading || kIsWeb ? null : _import,
+                          icon: _loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.sync),
+                          label: Text(_loading ? 'Importation...' : 'Actualiser'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const MembersPage(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.search),
+                          label: const Text('Rechercher'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(

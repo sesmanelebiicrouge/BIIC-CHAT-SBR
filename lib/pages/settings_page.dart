@@ -5,6 +5,7 @@ import '../widgets/biic_brand.dart';
 import 'profile_page.dart';
 import 'blocked_contacts_page.dart';
 import 'phone_registration_page.dart';
+import 'device_access_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -124,10 +125,13 @@ class _SettingsPageState extends State<SettingsPage> {
       ListTile(leading:const Icon(Icons.phone_android),title:const Text('Changer de numéro'),subtitle:Text(user?.phone??'Numéro actuel'),onTap:_loading?null:_changePhone),
       ListTile(leading:const Icon(Icons.verified_user_outlined),title:const Text('Enregistrer mon numéro BIIC CHAT'),subtitle:const Text('Valider le numéro avec le code envoyé à votre e-mail'),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const PhoneRegistrationPage()))),
       const Divider(),
-      const ListTile(title:Text('Conversations',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
-      const ListTile(leading:Icon(Icons.chat_bubble_outline),title:Text('Paramètres des conversations'),subtitle:Text('Gérez les discussions depuis BIIC CHAT.')),
-      const Divider(),
-      const ListTile(title:Text('Confidentialité',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+      const ListTile(title:Text('Confidentialité et autorisations',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),
+      ListTile(
+        leading:const Icon(Icons.contacts_outlined),
+        title:const Text('Autorisations du téléphone'),
+        subtitle:const Text('Contacts, caméra, microphone, localisation et notifications'),
+        onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const DeviceAccessPage())),
+      ),
       ListTile(leading:const Icon(Icons.block),title:const Text('Contacts bloqués'),subtitle:const Text('Gérer les personnes que vous avez bloquées'),onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const BlockedContactsPage()))),
       const Divider(),
       const ListTile(title:Text('Sécurité',style:TextStyle(fontSize:18,fontWeight:FontWeight.w800))),

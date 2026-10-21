@@ -28,9 +28,9 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Check formatting without changing the checkout
-        # Existing files still have formatting differences; keep this diagnostic non-mutating.
-        run: dart format --output=none .
+      - name: Format Dart sources
+        # Normalize legacy and newly added files before static analysis and tests.
+        run: dart format .
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos

@@ -1,15 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/profile_service.dart';
+import '../services/device_permissions_service.dart';
 
 class ProfilePage extends StatefulWidget { const ProfilePage({super.key}); @override State<ProfilePage> createState()=>_ProfilePageState(); }
 class _ProfilePageState extends State<ProfilePage> {
   final _service=ProfileService();
+  final _permissions=DevicePermissionsService();
   final _name=TextEditingController(); final _bio=TextEditingController();
   String _status='offline'; String? _avatarUrl; bool _loading=true; bool _saving=false;
   @override void initState(){super.initState(); _load();}
   Future<void> _load() async { try { final p=await _service.getMyProfile(); _name.text=p['display_name'] as String? ?? ''; _bio.text=p['bio'] as String? ?? ''; _status=p['status'] as String? ?? 'offline'; _avatarUrl=await _service.createAvatarSignedUrl(p['avatar_url'] as String?); } catch(e){ if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString()))); } finally { if(mounted)setState(()=>_loading=false); } }
-  Future<void> _avatar() async { final file=await ImagePicker().pickImage(source:ImageSource.gallery,maxWidth:1200,maxHeight:1200,imageQuality:85); if(file==null)return; try { final bytes=await file.readAsBytes(); final path=await _service.uploadAvatar(bytes,fileName:file.name); final url=await _service.createAvatarSignedUrl(path); if(mounted)setState(()=>_avatarUrl=url); } catch(e){ if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString()))); } }
+  Future<void> _avatar() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choisir dans la galerie'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Prendre une photo'),
+              onTap: () => Navigator.pop(sheetContext, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+    try {
+      if (source == ImageSource.camera && !kIsWeb) {
+        await _permissions.requestCamera();
+      }
+      final file = await ImagePicker().pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 85,
+      );
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      final path = await _service.uploadAvatar(bytes, fileName: file.name);
+      final url = await _service.createAvatarSignedUrl(path);
+      if (mounted) setState(() => _avatarUrl = url);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de modifier la photo : $e')),
+        );
+      }
+    }
+  }
   Future<void> _save() async { setState(()=>_saving=true); try { await _service.updateProfile(displayName:_name.text,bio:_bio.text,status:_status); if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Profil enregistré.'))); } catch(e){ if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(e.toString()))); } finally { if(mounted)setState(()=>_saving=false); } }
   @override Widget build(BuildContext context){ if(_loading)return const Scaffold(body:Center(child:CircularProgressIndicator())); return Scaffold(appBar:AppBar(title:const Text('Mon profil')),body:ListView(padding:const EdgeInsets.all(20),children:[
     Center(child:Stack(children:[CircleAvatar(radius:52,backgroundImage:_avatarUrl==null?null:NetworkImage(_avatarUrl!),child:_avatarUrl==null?const Icon(Icons.person,size:52):null),Positioned(right:0,bottom:0,child:IconButton.filled(onPressed:_avatar,icon:const Icon(Icons.camera_alt),tooltip:'Changer la photo'))])),

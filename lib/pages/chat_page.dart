@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:record/record.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -9,6 +12,7 @@ import '../services/conversation_service.dart';
 import '../services/media_service.dart';
 import '../services/device_permissions_service.dart';
 import '../services/location_share_service.dart';
+import '../services/call_history_service.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -22,8 +26,15 @@ class _ChatPageState extends State<ChatPage> {
   final _devicePermissions = DevicePermissionsService();
   final _locationShare = LocationShareService();
   final _controller = TextEditingController();
+  final _recorder = AudioRecorder();
+  StreamSubscription<Uint8List>? _recordingSubscription;
+  final _recordedAudio = BytesBuilder(copy: false);
+  bool _recording = false;
   bool _sending = false;
   bool _uploading = false;
+  Map<String, dynamic>? _replyToMessage;
+  String? _editingMessageId;
+  String _searchQuery = '';
   final Set<String> _readMarked = <String>{};
 
   Future<void> _markIncomingAsRead(
@@ -54,26 +65,352 @@ class _ChatPageState extends State<ChatPage> {
     if (text.isEmpty || user == null) return;
     setState(() => _sending = true);
     try {
-      await _service.sendMessage(conversationId: widget.conversationId, senderId: user.id, content: text);
+      final editingId = _editingMessageId;
+      if (editingId != null) {
+        await _service.editMessage(messageId: editingId, content: text);
+      } else {
+        await _service.sendMessage(
+          conversationId: widget.conversationId,
+          senderId: user.id,
+          content: text,
+          replyToMessageId: _replyToMessage?['id']?.toString(),
+        );
+      }
       _controller.clear();
+      if (mounted) {
+        setState(() {
+          _replyToMessage = null;
+          _editingMessageId = null;
+        });
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Envoi impossible : $e')));
     } finally { if (mounted) setState(() => _sending = false); }
   }
 
-  Future<void> _startAudioCall() async {
-    final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
-    final uri = Uri.parse('https://meet.jit.si/$room');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de démarrer l’appel audio.')));
+  void _beginReply(Map<String, dynamic> message) {
+    setState(() {
+      _editingMessageId = null;
+      _replyToMessage = message;
+      _controller.clear();
+    });
+  }
+
+  void _beginEdit(Map<String, dynamic> message) {
+    setState(() {
+      _replyToMessage = null;
+      _editingMessageId = message['id']?.toString();
+      _controller.text = message['content'] as String? ?? '';
+    });
+  }
+
+  Future<void> _deleteMessage(Map<String, dynamic> message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Supprimer le message ?'),
+        content: const Text('Le message sera remplacé par une indication de suppression pour les participants.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Supprimer')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _service.deleteMessage(message['id'].toString());
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression impossible : $e')));
     }
   }
 
-  Future<void> _startVideoCall() async {
+  Future<void> _chooseReaction(Map<String, dynamic> message) async {
+    const reactions = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '👏'];
+    final reaction = await showModalBottomSheet<String>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: reactions.map((emoji) => ActionChip(
+              label: Text(emoji, style: const TextStyle(fontSize: 24)),
+              onPressed: () => Navigator.pop(sheetContext, emoji),
+            )).toList(),
+          ),
+        ),
+      ),
+    );
+    if (reaction == null) return;
+    try {
+      await _service.setReaction(messageId: message['id'].toString(), reaction: reaction);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Réaction impossible : $e')));
+    }
+  }
+
+  Future<void> _togglePin(Map<String, dynamic> message) async {
+    try {
+      await _service.setMessagePinned(
+        messageId: message['id'].toString(),
+        pinned: message['is_pinned'] != true,
+      );
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Épinglage impossible : $e')));
+    }
+  }
+
+  Future<void> _showMessageActions(Map<String, dynamic> message, bool mine) async {
+    if (message['deleted_at'] != null) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.reply),
+              title: const Text('Répondre'),
+              onTap: () { Navigator.pop(sheetContext); _beginReply(message); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_emotions_outlined),
+              title: const Text('Réagir'),
+              onTap: () { Navigator.pop(sheetContext); _chooseReaction(message); },
+            ),
+            if (mine && (message['media_url'] == null || (message['content'] as String? ?? '').isNotEmpty))
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: const Text('Modifier le texte'),
+                onTap: () { Navigator.pop(sheetContext); _beginEdit(message); },
+              ),
+            if (mine)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Supprimer le message'),
+                onTap: () { Navigator.pop(sheetContext); _deleteMessage(message); },
+              ),
+            if (mine)
+              ListTile(
+                leading: Icon(message['is_pinned'] == true ? Icons.push_pin : Icons.push_pin_outlined),
+                title: Text(message['is_pinned'] == true ? 'Désépingler' : 'Épingler'),
+                onTap: () { Navigator.pop(sheetContext); _togglePin(message); },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _searchMessages() async {
+    final controller = TextEditingController(text: _searchQuery);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Rechercher dans la discussion'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Mot ou expression...',
+            prefixIcon: Icon(Icons.search),
+          ),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, ''), child: const Text('Effacer')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: const Text('Rechercher')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value != null && mounted) setState(() => _searchQuery = value.trim());
+  }
+
+  Future<void> _archiveConversation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Archiver cette discussion ?'),
+        content: const Text('La discussion sera masquée de la liste principale. Vous pourrez la retrouver dans les discussions archivées.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Archiver')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _service.archiveConversation(widget.conversationId);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Archivage impossible : $e')));
+    }
+  }
+
+  Future<void> _toggleVoiceRecording() async {
+    if (_recording) {
+      await _finishVoiceRecording();
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Enregistrer un message vocal ?'),
+        content: const Text('BIIC CHAT utilisera le microphone pendant l’enregistrement. Le fichier audio ne sera envoyé aux participants qu’après avoir arrêté puis confirmé l’envoi.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Autoriser')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      if (!kIsWeb) await _devicePermissions.requestMicrophone();
+      if (!await _recorder.hasPermission()) {
+        throw StateError('Autorisez le microphone pour enregistrer un message vocal.');
+      }
+      _recordedAudio.clear();
+      final stream = await _recorder.startStream(
+        const RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+      );
+      _recordingSubscription = stream.listen(
+        _recordedAudio.add,
+        onError: (Object error) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Erreur d’enregistrement : $error')),
+            );
+          }
+        },
+      );
+      if (mounted) setState(() => _recording = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de démarrer l’enregistrement : $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _finishVoiceRecording() async {
+    try {
+      await _recorder.stop();
+      await _recordingSubscription?.cancel();
+      _recordingSubscription = null;
+      final pcm = _recordedAudio.takeBytes();
+      if (pcm.isEmpty) {
+        if (mounted) setState(() => _recording = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aucun son enregistré.')),
+          );
+        }
+        return;
+      }
+      final wav = _wrapPcmAsWav(pcm, sampleRate: 16000, channels: 1, bitsPerSample: 16);
+      if (!mounted) return;
+      final send = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Envoyer le message vocal ?'),
+          content: Text('Durée approximative : ${(pcm.length / (16000 * 2)).toStringAsFixed(1)} seconde(s).'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Supprimer')),
+            FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Envoyer')),
+          ],
+        ),
+      );
+      if (send == true) {
+        await _upload('vocal_${DateTime.now().millisecondsSinceEpoch}.wav', wav, 'audio/wav');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de terminer le message vocal : $e')),
+        );
+      }
+    } finally {
+      _recordedAudio.clear();
+      if (mounted) setState(() => _recording = false);
+    }
+  }
+
+  Uint8List _wrapPcmAsWav(
+    Uint8List pcm, {
+    required int sampleRate,
+    required int channels,
+    required int bitsPerSample,
+  }) {
+    final header = ByteData(44);
+    void ascii(int offset, String value) {
+      for (var i = 0; i < value.length; i++) {
+        header.setUint8(offset + i, value.codeUnitAt(i));
+      }
+    }
+
+    final byteRate = sampleRate * channels * bitsPerSample ~/ 8;
+    final blockAlign = channels * bitsPerSample ~/ 8;
+    ascii(0, 'RIFF');
+    header.setUint32(4, 36 + pcm.length, Endian.little);
+    ascii(8, 'WAVE');
+    ascii(12, 'fmt ');
+    header.setUint32(16, 16, Endian.little);
+    header.setUint16(20, 1, Endian.little);
+    header.setUint16(22, channels, Endian.little);
+    header.setUint32(24, sampleRate, Endian.little);
+    header.setUint32(28, byteRate, Endian.little);
+    header.setUint16(32, blockAlign, Endian.little);
+    header.setUint16(34, bitsPerSample, Endian.little);
+    ascii(36, 'data');
+    header.setUint32(40, pcm.length, Endian.little);
+    final bytes = Uint8List(44 + pcm.length);
+    bytes.setRange(0, 44, header.buffer.asUint8List());
+    bytes.setRange(44, bytes.length, pcm);
+    return bytes;
+  }
+
+  Future<void> _startAudioCall() => _startExternalCall('audio');
+
+  Future<void> _startVideoCall() => _startExternalCall('video');
+
+  Future<void> _startExternalCall(String callType) async {
     final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
     final uri = Uri.parse('https://meet.jit.si/$room');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de démarrer l’appel vidéo.')));
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Impossible de démarrer l’appel ${callType == 'audio' ? 'audio' : 'vidéo'}.')),
+          );
+        }
+        return;
+      }
+      try {
+        await CallHistoryService().recordOutgoingCall(
+          conversationId: widget.conversationId,
+          callType: callType,
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('L’appel a été ouvert, mais son historique n’a pas pu être enregistré : $e')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du lancement de l’appel : $e')),
+        );
+      }
     }
   }
 
@@ -108,7 +445,7 @@ class _ChatPageState extends State<ChatPage> {
       }
       return;
     }
-    final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);
+    final permission = await FlutterContacts.permissions.request(PermissionType.read);
     if (permission != PermissionStatus.granted) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accès aux contacts refusé.')));
       return;
@@ -278,110 +615,343 @@ class _ChatPageState extends State<ChatPage> {
   }
   Future<String> _signed(String path) => _media.createSignedUrl(path);
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final userId = _service.client.auth.currentUser?.id;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
-          IconButton(tooltip: 'Appel audio', icon: const Icon(Icons.call_outlined), onPressed: _startAudioCall),
-          IconButton(tooltip: 'Appel vidéo', icon: const Icon(Icons.videocam_outlined), onPressed: _startVideoCall),
+          IconButton(
+            tooltip: 'Appel audio',
+            icon: const Icon(Icons.call_outlined),
+            onPressed: _startAudioCall,
+          ),
+          IconButton(
+            tooltip: 'Appel vidéo',
+            icon: const Icon(Icons.videocam_outlined),
+            onPressed: _startVideoCall,
+          ),
+          IconButton(
+            tooltip: 'Rechercher dans la discussion',
+            icon: const Icon(Icons.search),
+            onPressed: _searchMessages,
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Options de discussion',
+            onSelected: (value) {
+              if (value == 'archive') _archiveConversation();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'archive',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Archiver la discussion'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-      body: Column(children: [
-      if (_uploading) const LinearProgressIndicator(minHeight: 2),
-      Expanded(child: StreamBuilder<List<Map<String,dynamic>>>(
-        stream: _service.watchMessages(widget.conversationId),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Impossible de charger les messages.'),
-            ));
-          }
-          final messages = snapshot.data ?? const [];
-          _markIncomingAsRead(messages, userId);
-          if (messages.isEmpty) {
-            return const Center(child: Text('Aucun message. Écrivez le premier !'));
-          }
-          return StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _service.watchMessageReads(widget.conversationId),
-            builder: (context, readSnapshot) {
-              final reads = readSnapshot.data ?? const [];
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  final message = messages[index];
-                  final mine = message['sender_id'] == userId;
-                  final text = message['content'] as String? ?? '';
-                  final mediaPath = message['media_url'] as String?;
-                  final mediaType = message['media_type'] as String? ?? '';
-                  final isRead = mine && reads.any((read) =>
-                      read['message_id']?.toString() == message['id']?.toString() &&
-                      read['user_id']?.toString() != userId);
-                  return Align(
-                    alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(10),
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.sizeOf(context).width * .82,
-                      ),
-                      decoration: BoxDecoration(
-                        color: mine
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (mediaPath != null && mediaPath.isNotEmpty)
-                            _MediaBubble(
-                              path: mediaPath,
-                              type: mediaType,
-                              signedUrl: _signed,
-                              mine: mine,
-                            ),
-                          if (text.isNotEmpty)
-                            Padding(
-                              padding: EdgeInsets.only(top: mediaPath != null ? 8 : 0),
-                              child: _buildMessageText(text, mine),
-                            ),
-                          if (mine)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                isRead ? '✓✓ Lu' : '✓ Envoyé',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimary
-                                      .withValues(alpha: .8),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+      body: Column(
+        children: [
+          if (_uploading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _service.watchMessages(widget.conversationId),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Impossible de charger les messages.'),
                     ),
                   );
-                },
-              );
-            },
-          );
-        },
-      )),
-      SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-        IconButton(tooltip: 'Joindre un fichier', onPressed: _uploading ? null : _attachments, icon: const Icon(Icons.add_circle_outline)),
-        Expanded(child: TextField(controller: _controller, minLines: 1, maxLines: 4, textInputAction: TextInputAction.send, onSubmitted: (_) => _send(), decoration: const InputDecoration(hintText: 'Écrire un message...', border: OutlineInputBorder()))),
-        const SizedBox(width: 8),
-        IconButton.filled(tooltip: 'Envoyer', onPressed: _sending || _uploading ? null : _send, icon: _sending ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.send)),
-      ]))),
-    ]));
+                }
+                final allMessages = snapshot.data ?? const <Map<String, dynamic>>[];
+                _markIncomingAsRead(allMessages, userId);
+                if (allMessages.isEmpty) {
+                  return const Center(child: Text('Aucun message. Écrivez le premier !'));
+                }
+                final messages = _searchQuery.isEmpty
+                    ? allMessages
+                    : allMessages.where((message) =>
+                        (message['content'] as String? ?? '')
+                            .toLowerCase()
+                            .contains(_searchQuery.toLowerCase()))
+                        .toList();
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Aucun message correspondant.'),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => setState(() => _searchQuery = ''),
+                          child: const Text('Effacer la recherche'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _service.watchMessageReads(widget.conversationId),
+                  builder: (context, readSnapshot) {
+                    final reads = readSnapshot.data ?? const <Map<String, dynamic>>[];
+                    return StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: _service.watchMessageReactions(),
+                      builder: (context, reactionSnapshot) {
+                        final reactions = reactionSnapshot.data ?? const <Map<String, dynamic>>[];
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final message = messages[index];
+                            final mine = message['sender_id'] == userId;
+                            final deleted = message['deleted_at'] != null;
+                            final text = deleted
+                                ? 'Ce message a été supprimé'
+                                : (message['content'] as String? ?? '');
+                            final mediaPath = deleted ? null : message['media_url'] as String?;
+                            final mediaType = message['media_type'] as String? ?? '';
+                            final messageId = message['id']?.toString() ?? '';
+                            final isRead = mine && reads.any((read) =>
+                                read['message_id']?.toString() == messageId &&
+                                read['user_id']?.toString() != userId);
+                            final replyId = message['reply_to_message_id']?.toString();
+                            Map<String, dynamic>? reply;
+                            if (replyId != null) {
+                              for (final candidate in allMessages) {
+                                if (candidate['id']?.toString() == replyId) {
+                                  reply = candidate;
+                                  break;
+                                }
+                              }
+                            }
+                            final messageReactions = reactions
+                                .where((reaction) => reaction['message_id']?.toString() == messageId)
+                                .toList();
+                            final reactionCounts = <String, int>{};
+                            for (final reaction in messageReactions) {
+                              final emoji = reaction['reaction']?.toString() ?? '';
+                              if (emoji.isNotEmpty) {
+                                reactionCounts[emoji] = (reactionCounts[emoji] ?? 0) + 1;
+                              }
+                            }
+                            final theme = Theme.of(context);
+                            return Align(
+                              alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                              child: GestureDetector(
+                                onLongPress: deleted ? null : () => _showMessageActions(message, mine),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(10),
+                                  constraints: BoxConstraints(
+                                    maxWidth: MediaQuery.sizeOf(context).width * .82,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: mine
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (reply != null)
+                                        Container(
+                                          width: double.infinity,
+                                          margin: const EdgeInsets.only(bottom: 6),
+                                          padding: const EdgeInsets.all(7),
+                                          decoration: BoxDecoration(
+                                            color: (mine ? theme.colorScheme.onPrimary : theme.colorScheme.primary)
+                                                .withValues(alpha: .10),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            'Réponse à : ${reply['deleted_at'] != null ? 'Message supprimé' : ((reply['content'] as String? ?? '').isEmpty ? 'Pièce jointe' : reply['content'])}',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                      if (message['is_pinned'] == true)
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 5),
+                                          child: Text(
+                                            '📌 Épinglé',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      if (!deleted && mediaPath != null && mediaPath.isNotEmpty)
+                                        _MediaBubble(
+                                          path: mediaPath,
+                                          type: mediaType,
+                                          signedUrl: _signed,
+                                          mine: mine,
+                                        ),
+                                      if (text.isNotEmpty)
+                                        Padding(
+                                          padding: EdgeInsets.only(top: mediaPath != null && !deleted ? 8 : 0),
+                                          child: deleted
+                                              ? Text(text, style: TextStyle(fontStyle: FontStyle.italic, color: mine ? theme.colorScheme.onPrimary.withValues(alpha: .75) : theme.colorScheme.onSurfaceVariant))
+                                              : _buildMessageText(text, mine),
+                                        ),
+                                      if (message['edited_at'] != null && !deleted)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            'Modifié',
+                                            style: TextStyle(fontSize: 10, color: mine ? theme.colorScheme.onPrimary.withValues(alpha: .7) : theme.colorScheme.onSurfaceVariant),
+                                          ),
+                                        ),
+                                      if (reactionCounts.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 5),
+                                          child: Wrap(
+                                            spacing: 4,
+                                            runSpacing: 4,
+                                            children: reactionCounts.entries.map((entry) => InkWell(
+                                              onTap: () async {
+                                                try {
+                                                  await _service.setReaction(messageId: messageId, reaction: entry.key);
+                                                } catch (e) {
+                                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Réaction impossible : $e')));
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: theme.colorScheme.surface.withValues(alpha: .18),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text('${entry.key} ${entry.value}', style: TextStyle(color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface)),
+                                              ),
+                                            )).toList(),
+                                          ),
+                                        ),
+                                      if (mine)
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            isRead ? '✓✓ Lu' : '✓ Envoyé',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: theme.colorScheme.onPrimary.withValues(alpha: .8),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          if (_replyToMessage != null || _editingMessageId != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 7, 4, 7),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Row(
+                children: [
+                  Icon(_editingMessageId != null ? Icons.edit_outlined : Icons.reply, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _editingMessageId != null
+                          ? 'Modification du message'
+                          : 'Réponse à : ${(_replyToMessage?['content'] as String? ?? '').isEmpty ? 'Pièce jointe' : _replyToMessage?['content']}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Annuler',
+                    onPressed: () => setState(() {
+                      _replyToMessage = null;
+                      _editingMessageId = null;
+                      _controller.clear();
+                    }),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Joindre un fichier',
+                    onPressed: _uploading || _editingMessageId != null || _recording ? null : _attachments,
+                    icon: const Icon(Icons.add_circle_outline),
+                  ),
+                  IconButton(
+                    tooltip: _recording ? 'Arrêter et envoyer le vocal' : 'Enregistrer un message vocal',
+                    onPressed: _sending || _uploading || _editingMessageId != null
+                        ? null
+                        : _toggleVoiceRecording,
+                    color: _recording ? Colors.red : null,
+                    icon: Icon(_recording ? Icons.stop_circle_outlined : Icons.mic_none_outlined),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      decoration: InputDecoration(
+                        hintText: _editingMessageId != null
+                            ? 'Modifier le message...'
+                            : _replyToMessage != null
+                                ? 'Écrire une réponse...'
+                                : 'Écrire un message...',
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    tooltip: _editingMessageId != null ? 'Enregistrer' : 'Envoyer',
+                    onPressed: _sending || _uploading || _recording ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Icon(_editingMessageId != null ? Icons.check : Icons.send),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
-  @override void dispose(){_controller.dispose();super.dispose();}
+  @override void dispose(){
+    _controller.dispose();
+    unawaited(_recordingSubscription?.cancel() ?? Future<void>.value());
+    unawaited(_recorder.dispose());
+    super.dispose();
+  }
 }
 class _MediaBubble extends StatelessWidget {
   final String path; final String type; final Future<String> Function(String) signedUrl; final bool mine;
@@ -391,7 +961,81 @@ class _MediaBubble extends StatelessWidget {
       if (snapshot.connectionState == ConnectionState.waiting) return const SizedBox(width:180,height:120,child:Center(child:CircularProgressIndicator()));
       final url = snapshot.data; if (url == null) return const Text('Pièce jointe indisponible.');
       if (type.startsWith('image/')) return ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(url, width: 220, height: 220, fit: BoxFit.cover, errorBuilder: (_,__,___)=>const Text('Image indisponible.')));
+      if (type.startsWith('audio/')) return _AudioBubble(url: url, mine: mine);
       return Row(mainAxisSize: MainAxisSize.min, children: [Icon(Icons.insert_drive_file, color: mine ? Theme.of(context).colorScheme.onPrimary : null), const SizedBox(width: 8), Flexible(child: Text(path.split('/').last, overflow: TextOverflow.ellipsis))]);
     });
+  }
+}
+
+
+class _AudioBubble extends StatefulWidget {
+  const _AudioBubble({required this.url, required this.mine});
+  final String url;
+  final bool mine;
+
+  @override
+  State<_AudioBubble> createState() => _AudioBubbleState();
+}
+
+class _AudioBubbleState extends State<_AudioBubble> {
+  final AudioPlayer _player = AudioPlayer();
+  StreamSubscription<PlayerState>? _subscription;
+  bool _playing = false;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = _player.onPlayerStateChanged.listen((state) {
+      if (mounted) setState(() => _playing = state == PlayerState.playing);
+    });
+  }
+
+  Future<void> _toggle() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      if (_playing) {
+        await _player.pause();
+      } else {
+        await _player.play(UrlSource(widget.url));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lecture audio impossible : $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = widget.mine
+        ? Theme.of(context).colorScheme.onPrimary
+        : Theme.of(context).colorScheme.onSurface;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: _playing ? 'Mettre en pause' : 'Écouter le message vocal',
+          onPressed: _loading ? null : _toggle,
+          icon: _loading
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : Icon(_playing ? Icons.pause_circle_filled : Icons.play_circle_fill),
+          color: foreground,
+        ),
+        Flexible(child: Text('Message vocal', style: TextStyle(color: foreground))),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    unawaited(_subscription?.cancel() ?? Future<void>.value());
+    unawaited(_player.dispose());
+    super.dispose();
   }
 }

@@ -14,10 +14,11 @@ Version cliente préparée : **1.0.2+8**. Les tests et builds de la nouvelle ré
 - CI GitHub Actions : analyse, formatage, tests et build Web.
 - Tests automatisés de la configuration publique Supabase.
 - Import de contacts découpé en lots de 500, avec tests des limites de lot.
+- Parcours de validation du numéro par code e-mail, avec e-mail de validation conservé dans le profil privé.
 - Validation des fichiers joints côté service et nettoyage des médias orphelins en cas d’échec d’enregistrement.
 
 ## À configurer avant publication
-1. **Bloquant à vérifier :** les migrations SQL du dépôt comportent des préfixes dupliqués (013 à 016). Comparer les migrations à l'historique réel du projet Supabase avant tout déploiement de schéma ; ne pas exécuter toutes les migrations aveuglément.
+1. **Bloquant à vérifier :** les migrations SQL du dépôt comportent des préfixes dupliqués (013 à 016). Comparer les migrations à l'historique réel du projet Supabase avant tout déploiement de schéma ; ne pas exécuter toutes les migrations aveuglément. La validation par e-mail du numéro nécessite aussi les migrations horodatées 20261021140000, 20261021140100 et 20261021141500 après réconciliation.
 2. Renseigner SUPABASE_URL et SUPABASE_PUBLISHABLE_KEY comme variables de build.
 3. Ne jamais mettre la clé service_role dans Flutter.
 4. Configurer les notifications push Android/iOS/Web avec Firebase/FCM et les credentials de production.

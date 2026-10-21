@@ -9,7 +9,8 @@ Ce document sépare ce qui existe dans le code des fonctionnalités qui demanden
 - Recherche de membres, import de contacts, blocage et signalement.
 - Pièces jointes via les sélecteurs système, stockage privé attendu dans Supabase.
 - Profil, suppression de compte et configuration TOTP.
-- Partage ponctuel de position sous forme de lien cartographique (branche de fonctionnalité en cours).
+- Partage ponctuel de position sous forme de lien cartographique (position partagée une seule fois, sans suivi en arrière-plan).
+- Invitation des contacts non inscrits via l’application SMS avec un lien vers l’application Web.
 - Flux d’inscription/validation du numéro BIIC CHAT par code envoyé à l’e-mail (branche/PR séparée, déploiement serveur encore requis).
 
 ## Priorité P0 — avant toute publication publique
@@ -29,7 +30,7 @@ Ce document sépare ce qui existe dans le code des fonctionnalités qui demanden
 - Recherche dans l’historique des conversations, pagination et chargement progressif pour les longues discussions.
 - Administration des groupes : rôles, ajout/retrait de membres, départ et suppression contrôlée du groupe.
 - Partage de position avec confirmation claire avant l’envoi; aucun suivi en arrière-plan.
-- Invitations pour les contacts qui ne sont pas encore inscrits.
+
 
 ## Priorité P2 — fonctionnalités avancées, à planifier séparément
 

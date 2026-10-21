@@ -297,6 +297,14 @@ class ConversationService {
         .map((rows) => List<Map<String, dynamic>>.from(rows));
   }
 
+  Stream<List<Map<String, dynamic>>> watchMessageReactions() {
+    return _supabase
+        .from('message_reactions')
+        .stream(primaryKey: ['message_id', 'user_id'])
+        .order('created_at', ascending: true)
+        .map((rows) => List<Map<String, dynamic>>.from(rows));
+  }
+
   Stream<List<Map<String, dynamic>>> watchMessageReads(String conversationId) {
     if (conversationId.trim().isEmpty) return const Stream.empty();
     return _supabase

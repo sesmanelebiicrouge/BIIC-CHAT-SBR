@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/contacts_service.dart';
 import '../services/conversation_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'chat_page.dart';
 
 class ContactsPage extends StatefulWidget {
@@ -37,6 +38,44 @@ class _ContactsPageState extends State<ContactsPage> {
       }
     } finally {
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _inviteContact(ImportedContact contact) async {
+    final phone = contact.phone.trim();
+    if (phone.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ce contact ne possède pas de numéro utilisable.')),
+        );
+      }
+      return;
+    }
+
+    final invite = Uri(
+      scheme: 'sms',
+      path: phone,
+      queryParameters: {
+        'body': 'Salut ! Rejoins-moi sur BIIC CHAT pour discuter et partager des médias : '
+            'https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/',
+      },
+    );
+    try {
+      final opened = await launchUrl(
+        invite,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible d’ouvrir l’application SMS.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de préparer l’invitation SMS.')),
+        );
+      }
     }
   }
 
@@ -191,7 +230,12 @@ class _ContactsPageState extends State<ContactsPage> {
                                 : contact.displayName,
                           ),
                           subtitle: Text(contact.phone),
-                          trailing: const Icon(Icons.person_add_outlined),
+                          trailing: IconButton(
+                            tooltip: 'Inviter par SMS',
+                            icon: const Icon(Icons.person_add_outlined),
+                            onPressed: () => _inviteContact(contact),
+                          ),
+                          onTap: () => _inviteContact(contact),
                         ),
                       ),
                     ],

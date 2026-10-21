@@ -9,6 +9,7 @@ import 'profile_page.dart';
 import 'settings_page.dart';
 import 'status_page.dart';
 import 'call_history_page.dart';
+import 'archived_conversations_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -52,6 +53,7 @@ class _HomePageState extends State<HomePage> {
             onSelected: (value) {
               if (value == 'profile') _openProfile();
               if (value == 'settings') _openSettings();
+              if (value == 'archived') Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ArchivedConversationsPage()));
               if (value == 'logout') AuthService().signOut();
             },
             itemBuilder: (_) => const [
@@ -69,6 +71,14 @@ class _HomePageState extends State<HomePage> {
                   contentPadding: EdgeInsets.zero,
                   leading: Icon(Icons.settings_outlined),
                   title: Text('Paramètres'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'archived',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Discussions archivées'),
                 ),
               ),
               PopupMenuDivider(),

@@ -21,7 +21,7 @@ Les sélecteurs système de `image_picker`/`file_picker` évitent de demander un
 
 ## iOS
 
-Le dépôt actuel ne contient pas de projet iOS généré (`ios/Runner/Info.plist`). Après génération/configuration de la plateforme iOS, fusionner les clés de justification suivantes dans `ios/Runner/Info.plist` avant de compiler :
+Le dépôt actuel ne contient pas de projet iOS généré (`ios/Runner/Info.plist`). Le workflow iOS génère le projet et ajoute les descriptions caméra, contacts, photos et localisation, puis active les macros `permission_handler` pour caméra, contacts et localisation dans le Podfile. Si un projet iOS est créé manuellement, fusionner les clés de justification suivantes dans `ios/Runner/Info.plist` et activer les macros nécessaires dans `ios/Podfile` avant de compiler :
 
 - `NSCameraUsageDescription` — « BIIC CHAT utilise la caméra lorsque vous prenez une photo à envoyer. »
 - `NSMicrophoneUsageDescription` — « BIIC CHAT utilise le microphone lorsque vous enregistrez un message audio ou utilisez un appel intégré. »

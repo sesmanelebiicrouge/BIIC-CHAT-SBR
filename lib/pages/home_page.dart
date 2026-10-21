@@ -7,6 +7,7 @@ import 'contacts_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
+import 'statuses_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -17,6 +18,7 @@ class HomePage extends StatelessWidget {
       appBar:AppBar(
         title:const BiicBrand(iconSize:36,showSubtitle:false),
         actions:[
+          IconButton(tooltip:'Statuts 24 h',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const StatusesPage())),icon:const Icon(Icons.auto_awesome_outlined)),
           IconButton(tooltip:'Contacts',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ContactsPage())),icon:const Icon(Icons.contacts_outlined)),
           IconButton(tooltip:'Paramètres',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const SettingsPage())),icon:const Icon(Icons.settings_outlined)),
           IconButton(tooltip:'Mon profil',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ProfilePage())),icon:const Icon(Icons.account_circle_outlined)),

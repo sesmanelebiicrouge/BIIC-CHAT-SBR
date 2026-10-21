@@ -18,6 +18,7 @@ BIIC CHAT est une application Flutter de messagerie multiplateforme, conçue pou
 ### Messagerie
 - liste des conversations, discussions privées et groupes ;
 - recherche des membres et correspondance des contacts de l’appareil ;
+- invitation des contacts non inscrits via l’application SMS, avec un lien vers BIIC CHAT ;
 - messages persistants dans Supabase et réception temps réel via Supabase Realtime ;
 - accusés de lecture ;
 - pièces jointes : images, photos, vidéos, fichiers et contacts ;

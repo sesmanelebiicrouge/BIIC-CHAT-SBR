@@ -221,6 +221,7 @@ jobs:
           ]
           m.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
           PY
+          rsvg-convert -w 48 -h 48 -o web/biic_favicon_48.png assets/biic_logo.svg
           rsvg-convert -w 192 -h 192 -o web/biic_logo_192.png assets/biic_logo.svg
           rsvg-convert -w 512 -h 512 -o web/biic_logo.png assets/biic_logo.svg
           cp web/biic_logo.png web/favicon.png
@@ -256,6 +257,7 @@ jobs:
           test -s build/web/biic_logo.svg
           test -s build/web/biic_logo.png
           test -s build/web/biic_logo_192.png
+          test -s build/web/biic_favicon_48.png
           test -s build/web/sitemap.xml
           test -s build/web/robots.txt
           test -s build/web/manifest.json
@@ -270,6 +272,7 @@ jobs:
           grep -q 'main.dart.js?v=' build/web/flutter_bootstrap.js
           grep -q 'BigChat' build/web/index.html
           ! grep -q 'github.com/sesmanelebiicrouge/BIIC-CHAT-SBR' build/web/index.html
+          grep -q 'href="biic_favicon_48.png"' build/web/index.html
           grep -q 'href="biic_logo.png"' build/web/index.html
           grep -q 'biic_logo_192.png?v=' build/web/index.html
           grep -q 'alternateName' build/web/index.html

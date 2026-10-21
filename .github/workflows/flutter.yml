@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   analyze-and-test:
@@ -26,8 +25,7 @@ jobs:
         run: flutter pub get
 
       - name: Check formatting without changing the checkout
-        # Temporary non-mutating check: 22 Dart files currently need formatting.
-        # Commit formatting separately before making this step fail on differences.
+        # Existing files still have formatting differences; keep this diagnostic non-mutating.
         run: dart format --output=none .
 
       - name: Analyze

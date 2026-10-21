@@ -18,8 +18,8 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Web platform files
-        run: flutter create --platforms=web --org com.biicchat --project-name biic_chat_sbr .
+      - name: Generate Web and Android platform files
+        run: flutter create --platforms=web,android --org com.biicchat --project-name biic_chat_sbr .
 
       - name: Install dependencies
         run: flutter pub get
@@ -44,3 +44,11 @@ jobs:
             --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB \
             --pwa-strategy=none \
             --base-href "/BIIC-CHAT-SBR/"
+
+      - name: Build Android debug APK
+        run: |
+          flutter build apk --debug \
+            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB
+          test -s build/app/outputs/flutter-apk/app-debug.apk
+

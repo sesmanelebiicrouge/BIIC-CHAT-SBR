@@ -453,108 +453,301 @@ class _ChatPageState extends State<ChatPage> {
   }
   Future<String> _signed(String path) => _media.createSignedUrl(path);
 
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final userId = _service.client.auth.currentUser?.id;
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
-          IconButton(tooltip: 'Appel audio', icon: const Icon(Icons.call_outlined), onPressed: _startAudioCall),
-          IconButton(tooltip: 'Appel vidéo', icon: const Icon(Icons.videocam_outlined), onPressed: _startVideoCall),
+          IconButton(
+            tooltip: 'Appel audio',
+            icon: const Icon(Icons.call_outlined),
+            onPressed: _startAudioCall,
+          ),
+          IconButton(
+            tooltip: 'Appel vidéo',
+            icon: const Icon(Icons.videocam_outlined),
+            onPressed: _startVideoCall,
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Options de discussion',
+            onSelected: (value) {
+              if (value == 'archive') _archiveConversation();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'archive',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Archiver la discussion'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-      body: Column(children: [
-      if (_uploading) const LinearProgressIndicator(minHeight: 2),
-      Expanded(child: StreamBuilder<List<Map<String,dynamic>>>(
-        stream: _service.watchMessages(widget.conversationId),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text('Impossible de charger les messages.'),
-            ));
-          }
-          final messages = snapshot.data ?? const [];
-          _markIncomingAsRead(messages, userId);
-          if (messages.isEmpty) {
-            return const Center(child: Text('Aucun message. Écrivez le premier !'));
-          }
-          return StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _service.watchMessageReads(widget.conversationId),
-            builder: (context, readSnapshot) {
-              final reads = readSnapshot.data ?? const [];
-              return ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  final message = messages[index];
-                  final mine = message['sender_id'] == userId;
-                  final text = message['content'] as String? ?? '';
-                  final mediaPath = message['media_url'] as String?;
-                  final mediaType = message['media_type'] as String? ?? '';
-                  final isRead = mine && reads.any((read) =>
-                      read['message_id']?.toString() == message['id']?.toString() &&
-                      read['user_id']?.toString() != userId);
-                  return Align(
-                    alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(10),
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.sizeOf(context).width * .82,
-                      ),
-                      decoration: BoxDecoration(
-                        color: mine
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (mediaPath != null && mediaPath.isNotEmpty)
-                            _MediaBubble(
-                              path: mediaPath,
-                              type: mediaType,
-                              signedUrl: _signed,
-                              mine: mine,
-                            ),
-                          if (text.isNotEmpty)
-                            Padding(
-                              padding: EdgeInsets.only(top: mediaPath != null ? 8 : 0),
-                              child: _buildMessageText(text, mine),
-                            ),
-                          if (mine)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                isRead ? '✓✓ Lu' : '✓ Envoyé',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onPrimary
-                                      .withValues(alpha: .8),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
+      body: Column(
+        children: [
+          if (_uploading) const LinearProgressIndicator(minHeight: 2),
+          Expanded(
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _service.watchMessages(widget.conversationId),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Impossible de charger les messages.'),
                     ),
                   );
-                },
-              );
-            },
-          );
-        },
-      )),
-      SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-        IconButton(tooltip: 'Joindre un fichier', onPressed: _uploading ? null : _attachments, icon: const Icon(Icons.add_circle_outline)),
-        Expanded(child: TextField(controller: _controller, minLines: 1, maxLines: 4, textInputAction: TextInputAction.send, onSubmitted: (_) => _send(), decoration: const InputDecoration(hintText: 'Écrire un message...', border: OutlineInputBorder()))),
-        const SizedBox(width: 8),
-        IconButton.filled(tooltip: 'Envoyer', onPressed: _sending || _uploading ? null : _send, icon: _sending ? const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)) : const Icon(Icons.send)),
-      ]))),
-    ]));
+                }
+                final messages = snapshot.data ?? const <Map<String, dynamic>>[];
+                _markIncomingAsRead(messages, userId);
+                if (messages.isEmpty) {
+                  return const Center(child: Text('Aucun message. Écrivez le premier !'));
+                }
+                return StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: _service.watchMessageReads(widget.conversationId),
+                  builder: (context, readSnapshot) {
+                    final reads = readSnapshot.data ?? const <Map<String, dynamic>>[];
+                    return StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: _service.watchMessageReactions(),
+                      builder: (context, reactionSnapshot) {
+                        final reactions = reactionSnapshot.data ?? const <Map<String, dynamic>>[];
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) {
+                            final message = messages[index];
+                            final mine = message['sender_id'] == userId;
+                            final deleted = message['deleted_at'] != null;
+                            final text = deleted
+                                ? 'Ce message a été supprimé'
+                                : (message['content'] as String? ?? '');
+                            final mediaPath = deleted ? null : message['media_url'] as String?;
+                            final mediaType = message['media_type'] as String? ?? '';
+                            final messageId = message['id']?.toString() ?? '';
+                            final isRead = mine && reads.any((read) =>
+                                read['message_id']?.toString() == messageId &&
+                                read['user_id']?.toString() != userId);
+                            final replyId = message['reply_to_message_id']?.toString();
+                            Map<String, dynamic>? reply;
+                            if (replyId != null) {
+                              for (final candidate in messages) {
+                                if (candidate['id']?.toString() == replyId) {
+                                  reply = candidate;
+                                  break;
+                                }
+                              }
+                            }
+                            final messageReactions = reactions
+                                .where((reaction) => reaction['message_id']?.toString() == messageId)
+                                .toList();
+                            final reactionCounts = <String, int>{};
+                            for (final reaction in messageReactions) {
+                              final emoji = reaction['reaction']?.toString() ?? '';
+                              if (emoji.isNotEmpty) {
+                                reactionCounts[emoji] = (reactionCounts[emoji] ?? 0) + 1;
+                              }
+                            }
+                            final theme = Theme.of(context);
+                            return Align(
+                              alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+                              child: GestureDetector(
+                                onLongPress: deleted ? null : () => _showMessageActions(message, mine),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  padding: const EdgeInsets.all(10),
+                                  constraints: BoxConstraints(
+                                    maxWidth: MediaQuery.sizeOf(context).width * .82,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: mine
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surfaceContainerHighest,
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (reply != null)
+                                        Container(
+                                          width: double.infinity,
+                                          margin: const EdgeInsets.only(bottom: 6),
+                                          padding: const EdgeInsets.all(7),
+                                          decoration: BoxDecoration(
+                                            color: (mine ? theme.colorScheme.onPrimary : theme.colorScheme.primary)
+                                                .withValues(alpha: .10),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            'Réponse à : ${reply['deleted_at'] != null ? 'Message supprimé' : ((reply['content'] as String? ?? '').isEmpty ? 'Pièce jointe' : reply['content'])}',
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                      if (message['is_pinned'] == true)
+                                        Padding(
+                                          padding: const EdgeInsets.only(bottom: 5),
+                                          child: Text(
+                                            '📌 Épinglé',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+                                            ),
+                                          ),
+                                        ),
+                                      if (!deleted && mediaPath != null && mediaPath.isNotEmpty)
+                                        _MediaBubble(
+                                          path: mediaPath,
+                                          type: mediaType,
+                                          signedUrl: _signed,
+                                          mine: mine,
+                                        ),
+                                      if (text.isNotEmpty)
+                                        Padding(
+                                          padding: EdgeInsets.only(top: mediaPath != null && !deleted ? 8 : 0),
+                                          child: deleted
+                                              ? Text(text, style: TextStyle(fontStyle: FontStyle.italic, color: mine ? theme.colorScheme.onPrimary.withValues(alpha: .75) : theme.colorScheme.onSurfaceVariant))
+                                              : _buildMessageText(text, mine),
+                                        ),
+                                      if (message['edited_at'] != null && !deleted)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 2),
+                                          child: Text(
+                                            'Modifié',
+                                            style: TextStyle(fontSize: 10, color: mine ? theme.colorScheme.onPrimary.withValues(alpha: .7) : theme.colorScheme.onSurfaceVariant),
+                                          ),
+                                        ),
+                                      if (reactionCounts.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 5),
+                                          child: Wrap(
+                                            spacing: 4,
+                                            runSpacing: 4,
+                                            children: reactionCounts.entries.map((entry) => InkWell(
+                                              onTap: () async {
+                                                try {
+                                                  await _service.setReaction(messageId: messageId, reaction: entry.key);
+                                                } catch (e) {
+                                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Réaction impossible : $e')));
+                                                }
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: theme.colorScheme.surface.withValues(alpha: .18),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text('${entry.key} ${entry.value}', style: TextStyle(color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface)),
+                                              ),
+                                            )).toList(),
+                                          ),
+                                        ),
+                                      if (mine)
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            isRead ? '✓✓ Lu' : '✓ Envoyé',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: theme.colorScheme.onPrimary.withValues(alpha: .8),
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          if (_replyToMessage != null || _editingMessageId != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 7, 4, 7),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Row(
+                children: [
+                  Icon(_editingMessageId != null ? Icons.edit_outlined : Icons.reply, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _editingMessageId != null
+                          ? 'Modification du message'
+                          : 'Réponse à : ${(_replyToMessage?['content'] as String? ?? '').isEmpty ? 'Pièce jointe' : _replyToMessage?['content']}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Annuler',
+                    onPressed: () => setState(() {
+                      _replyToMessage = null;
+                      _editingMessageId = null;
+                      _controller.clear();
+                    }),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  IconButton(
+                    tooltip: 'Joindre un fichier',
+                    onPressed: _uploading || _editingMessageId != null ? null : _attachments,
+                    icon: const Icon(Icons.add_circle_outline),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      decoration: InputDecoration(
+                        hintText: _editingMessageId != null
+                            ? 'Modifier le message...'
+                            : _replyToMessage != null
+                                ? 'Écrire une réponse...'
+                                : 'Écrire un message...',
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    tooltip: _editingMessageId != null ? 'Enregistrer' : 'Envoyer',
+                    onPressed: _sending || _uploading ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Icon(_editingMessageId != null ? Icons.check : Icons.send),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
   @override void dispose(){_controller.dispose();super.dispose();}
 }

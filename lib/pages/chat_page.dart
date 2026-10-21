@@ -175,6 +175,49 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  Widget _buildMessageText(String text, bool mine) {
+    const locationPrefix = '📍 Ma position : ';
+    final theme = Theme.of(context);
+    final textColor = mine ? theme.colorScheme.onPrimary : null;
+    if (text.startsWith(locationPrefix)) {
+      final uri = Uri.tryParse(text.substring(locationPrefix.length).trim());
+      if (uri != null &&
+          uri.scheme == 'https' &&
+          uri.host == 'www.google.com' &&
+          uri.path.startsWith('/maps/')) {
+        return InkWell(
+          onTap: () async {
+            try {
+              final opened = await launchUrl(
+                uri,
+                mode: LaunchMode.externalApplication,
+              );
+              if (!opened && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Impossible d’ouvrir la carte.')),
+                );
+              }
+            } catch (_) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Impossible d’ouvrir la carte.')),
+                );
+              }
+            }
+          },
+          child: Text(
+            '$locationPrefix\nOuvrir la position sur Google Maps',
+            style: TextStyle(
+              color: mine ? theme.colorScheme.onPrimary : theme.colorScheme.primary,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        );
+      }
+    }
+    return Text(text, style: TextStyle(color: textColor));
+  }
+
   Future<void> _pickFile() async {
     final files = await FilePicker.pickFiles();
     if (files.isEmpty) return;
@@ -304,14 +347,7 @@ class _ChatPageState extends State<ChatPage> {
                           if (text.isNotEmpty)
                             Padding(
                               padding: EdgeInsets.only(top: mediaPath != null ? 8 : 0),
-                              child: Text(
-                                text,
-                                style: TextStyle(
-                                  color: mine
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : null,
-                                ),
-                              ),
+                              child: _buildMessageText(text, mine),
                             ),
                           if (mine)
                             Align(

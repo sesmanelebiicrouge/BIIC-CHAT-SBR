@@ -105,6 +105,9 @@ jobs:
           # Version browser-visible assets to avoid stale cached logos after deployment.
           # Keep favicon.png at a stable URL for search crawlers; the file itself is replaced below.
           s = s.replace('href="manifest.json"', f'href="manifest.json?v={build_id}"')
+          # Ensure browser tabs and crawlers use BIIC icons instead of Flutter defaults.
+          s = s.replace('href="favicon.png"', 'href="biic_logo.png"')
+          s = s.replace('href="icons/Icon-192.png"', f'href="biic_logo_192.png?v={build_id}"')
           s = s.replace(
               '<meta name="description" content="A new Flutter project.">',
               '<meta name="description" content="BIIC CHAT (BigChat) — application de messagerie instantanée pour échanger des messages, créer des groupes et partager des médias en ligne, notamment en Côte d’Ivoire.">'
@@ -124,7 +127,7 @@ jobs:
           <meta name="twitter:description" content="BIIC CHAT (BigChat) — messagerie instantanée.">
           <meta name="twitter:image" content="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png">
           <script type="application/ld+json">
-          {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT","alternateName":"BigChat","applicationCategory":"CommunicationApplication","operatingSystem":"Web","description":"BIIC CHAT (BigChat) — application de messagerie instantanée pour échanger des messages, créer des groupes et partager des médias.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png","sameAs":["https://github.com/sesmanelebiicrouge/BIIC-CHAT-SBR"]}
+          {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT","alternateName":"BigChat","applicationCategory":"CommunicationApplication","operatingSystem":"Web","description":"BIIC CHAT (BigChat) — application de messagerie instantanée pour échanger des messages, créer des groupes et partager des médias.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png"}
           </script>
           </head>''')
           s = s.replace(
@@ -263,6 +266,9 @@ jobs:
           grep -q 'flutter_bootstrap.js?v=' build/web/index.html
           grep -q 'main.dart.js?v=' build/web/flutter_bootstrap.js
           grep -q 'BigChat' build/web/index.html
+          ! grep -q 'github.com/sesmanelebiicrouge/BIIC-CHAT-SBR' build/web/index.html
+          grep -q 'href="biic_logo.png"' build/web/index.html
+          grep -q 'biic_logo_192.png?v=' build/web/index.html
           grep -q 'alternateName' build/web/index.html
 
       - name: Publish gh-pages branch

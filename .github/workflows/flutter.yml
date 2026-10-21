@@ -49,10 +49,20 @@ jobs:
             --pwa-strategy=none \
             --base-href "/BIIC-CHAT-SBR/"
 
-      - name: Build Android debug APK
+      - name: Build Android debug APK (retry transient SDK/NDK download failures)
         run: |
-          flutter build apk --debug \
-            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB
-          test -s build/app/outputs/flutter-apk/app-debug.apk
+          for attempt in 1 2 3; do
+            if flutter build apk --debug \
+              --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+              --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB; then
+              test -s build/app/outputs/flutter-apk/app-debug.apk
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "::warning::Android build attempt $attempt failed; retrying in $((attempt * 15)) seconds in case the Android SDK/NDK download was interrupted."
+              sleep $((attempt * 15))
+            fi
+          done
+          echo "::error::Android debug APK build failed after 3 attempts."
+          exit 1
 

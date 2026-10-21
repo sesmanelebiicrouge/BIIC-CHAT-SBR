@@ -3,11 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const cors = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const normalize = (value: string) => {
-  let phone = value.trim().replace(/[\\s().-]/g, "");
+  let phone = value.trim().replace(/[\s().-]/g, "");
   if (phone.startsWith("00")) phone = "+" + phone.slice(2);
   if (phone.startsWith("0")) phone = "+225" + phone.slice(1);
   if (!phone.startsWith("+")) phone = "+225" + phone;
-  if (!/^\\+225(?:01|05|07)\\d{8}$/.test(phone)) throw new Error("Numéro invalide. Utilisez +225 suivi d'un numéro ivoirien 01, 05 ou 07.");
+  if (!/^\+225(?:01|05|07)\d{8}$/.test(phone)) throw new Error("Numéro invalide. Utilisez +225 suivi d'un numéro ivoirien 01, 05 ou 07.");
   return phone;
 };
 const hash = async (value: string) => {
@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const resendKey = Deno.env.get("RESEND_API_KEY"), from = Deno.env.get("PHONE_OTP_FROM_EMAIL");
   if (!url || !anon || !serviceKey || !resendKey || !from) return reply({ error: "Validation e-mail non configurée sur le serveur." }, 503);
-  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\\s+/i, "");
+  const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) return reply({ error: "Connexion requise." }, 401);
   const authClient = createClient(url, anon, { global: { headers: { Authorization: "Bearer " + token } } });
   const { data: { user }, error: authError } = await authClient.auth.getUser(token);
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
         headers: { Authorization: "Bearer " + resendKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           from, to: [email], subject: "Code de validation de votre numéro — BIIC CHAT",
-          text: "Votre code de validation BIIC CHAT est : " + code + "\\nCe code expire dans 10 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
+          text: "Votre code de validation BIIC CHAT est : " + code + "\nCe code expire dans 10 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.",
           html: "<p>Votre code de validation BIIC CHAT est :</p><p style='font-size:28px;font-weight:bold;letter-spacing:6px'>" + code + "</p><p>Ce code expire dans 10 minutes. Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>",
         }),
       });
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
     if (body.action === "verify") {
       const code = (body.code ?? "").trim();
-      if (!/^\\d{6}$/.test(code)) return reply({ error: "Saisissez le code à 6 chiffres reçu par e-mail." }, 400);
+      if (!/^\d{6}$/.test(code)) return reply({ error: "Saisissez le code à 6 chiffres reçu par e-mail." }, 400);
       const { data: challenge, error } = await admin.from("phone_registration_codes").select("phone,code_hash,expires_at,attempts,consumed_at").eq("user_id", user.id).maybeSingle();
       if (error) throw error;
       if (!challenge || challenge.consumed_at || new Date(challenge.expires_at).getTime() < Date.now()) return reply({ error: "Code expiré. Demandez un nouveau code." }, 400);

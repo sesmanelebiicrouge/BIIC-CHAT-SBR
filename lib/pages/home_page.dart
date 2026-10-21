@@ -8,59 +8,298 @@ import 'chat_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
-  @override Widget build(BuildContext context){
-    final service=ConversationService(); final user=service.client.auth.currentUser;
-    if(user==null)return const MembersPage();
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  int _tab = 0;
+
+  void _openProfile() => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const ProfilePage()),
+      );
+
+  void _openSettings() => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const SettingsPage()),
+      );
+
+  void _newChat() => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const MembersPage()),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final service = ConversationService();
+    final user = service.client.auth.currentUser;
+    if (user == null) return const MembersPage();
+
+    final titles = ['Discussions', 'Statuts', 'Appels', 'Contacts'];
     return Scaffold(
-      appBar:AppBar(
-        title:const BiicBrand(iconSize:36,showSubtitle:false),
-        actions:[
-          IconButton(tooltip:'Contacts',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ContactsPage())),icon:const Icon(Icons.contacts_outlined)),
-          IconButton(tooltip:'Paramètres',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const SettingsPage())),icon:const Icon(Icons.settings_outlined)),
-          IconButton(tooltip:'Mon profil',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ProfilePage())),icon:const Icon(Icons.account_circle_outlined)),
-          IconButton(tooltip:'Nouveau chat',onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),icon:const Icon(Icons.person_add_alt_1)),
-          IconButton(tooltip:'Déconnexion',onPressed:()=>AuthService().signOut(),icon:const Icon(Icons.logout)),
+      appBar: AppBar(
+        title: const BiicBrand(iconSize: 36, showSubtitle: false),
+        actions: [
+          IconButton(
+            tooltip: 'Nouvelle discussion',
+            onPressed: _newChat,
+            icon: const Icon(Icons.edit_square),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Profil et paramètres',
+            onSelected: (value) {
+              if (value == 'profile') _openProfile();
+              if (value == 'settings') _openSettings();
+              if (value == 'logout') AuthService().signOut();
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'profile',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.account_circle_outlined),
+                  title: Text('Mon profil'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'settings',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.settings_outlined),
+                  title: Text('Paramètres'),
+                ),
+              ),
+              PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'logout',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.logout),
+                  title: Text('Déconnexion'),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
-      body:StreamBuilder<List<Map<String,dynamic>>>(
-        stream:service.getUserConversations(user.id),
-        builder:(context,snapshot){
-          if(snapshot.hasError)return Center(child:Padding(padding:const EdgeInsets.all(24),child:Text('Erreur : ${snapshot.error}')));
-          final conversations=snapshot.data??const [];
-          if(conversations.isEmpty)return Center(child:Padding(padding:const EdgeInsets.all(24),child:Column(mainAxisSize:MainAxisSize.min,children:[
-            const BiicAvatar(label:'B',radius:38),
-            const SizedBox(height:16),
-            const Text('Aucune conversation',style:TextStyle(fontSize:20,fontWeight:FontWeight.w800)),
-            const SizedBox(height:7),
-            const Text('Commencez une nouvelle discussion avec un membre de BIIC CHAT.',textAlign:TextAlign.center,style:TextStyle(color:Color(0xFF777777))),
-            const SizedBox(height:18),
-            Wrap(spacing:10,runSpacing:10,alignment:WrapAlignment.center,children:[
-              FilledButton.icon(onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),icon:const Icon(Icons.chat_rounded),label:const Text('Nouveau chat')),
-              OutlinedButton.icon(onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const ContactsPage())),icon:const Icon(Icons.contacts_outlined),label:const Text('Importer contacts')),
-            ]),
-          ])));
-          return ListView.separated(
-            padding:const EdgeInsets.only(top:8),
-            itemCount:conversations.length,
-            separatorBuilder:(_,__)=>const Divider(height:1,indent:78),
-            itemBuilder:(context,index){
-              final c=conversations[index];
-              return FutureBuilder<List<Map<String,dynamic>>>(
-                future:service.getConversationMembers(c['id'] as String),
-                builder:(context,membersSnapshot){
-                  final rows=membersSnapshot.data??const [];
-                  final names=rows.where((r)=>r['user_id']!=user.id).map((r)=>(r['display_name'] as String? ?? '').trim()).where((n)=>n.isNotEmpty).toList();
-                  final title=(c['name'] as String? ?? '').trim().isNotEmpty?c['name'] as String:(names.isNotEmpty?names.join(', '):'Conversation');
-                  return ListTile(contentPadding:const EdgeInsets.symmetric(horizontal:16,vertical:7),leading:BiicAvatar(label:title,radius:27),title:Text(title,style:const TextStyle(fontWeight:FontWeight.w700)),subtitle:Text(c['is_group']==true?'Groupe':'Discussion privée'),trailing:const Icon(Icons.chevron_right),onTap:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>ChatPage(conversationId:c['id'] as String,title:title))));
-                },
-              );
-            },
-          );
-        },
+      body: IndexedStack(
+        index: _tab,
+        children: [
+          _ConversationsTab(service: service, userId: user.id, onNewChat: _newChat, onContacts: () => setState(() => _tab = 3)),
+          const _FeaturePendingTab(
+            icon: Icons.donut_large,
+            title: 'Statuts',
+            description: 'La rubrique est prête dans la navigation, mais la publication et l’expiration des statuts ne sont pas encore implémentées. Les statuts ne seront affichés ici qu’une fois cette fonction reliée au serveur.',
+          ),
+          _CallsTab(onStartCall: _newChat),
+          const ContactsPage(showAppBar: false),
+        ],
       ),
-      floatingActionButton:FloatingActionButton.extended(onPressed:()=>Navigator.of(context).push(MaterialPageRoute(builder:(_)=>const MembersPage())),backgroundColor:const Color(0xFFD71920),foregroundColor:Colors.white,icon:const Icon(Icons.chat_rounded),label:const Text('Nouveau chat')),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (index) => setState(() => _tab = index),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            selectedIcon: Icon(Icons.chat_bubble),
+            label: 'Discussions',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.donut_large_outlined),
+            selectedIcon: Icon(Icons.donut_large),
+            label: 'Statuts',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.call_outlined),
+            selectedIcon: Icon(Icons.call),
+            label: 'Appels',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.contacts_outlined),
+            selectedIcon: Icon(Icons.contacts),
+            label: 'Contacts',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConversationsTab extends StatelessWidget {
+  const _ConversationsTab({
+    required this.service,
+    required this.userId,
+    required this.onNewChat,
+    required this.onContacts,
+  });
+
+  final ConversationService service;
+  final String userId;
+  final VoidCallback onNewChat;
+  final VoidCallback onContacts;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: service.getUserConversations(userId),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text('Impossible de charger les discussions : ${snapshot.error}'),
+            ),
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final conversations = snapshot.data!;
+        if (conversations.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const BiicAvatar(label: 'B', radius: 38),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Aucune discussion',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 7),
+                  const Text(
+                    'Démarrez une discussion avec un membre de BIIC CHAT ou recherchez une personne dans vos contacts.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF777777)),
+                  ),
+                  const SizedBox(height: 18),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: onNewChat,
+                        icon: const Icon(Icons.chat_rounded),
+                        label: const Text('Nouvelle discussion'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: onContacts,
+                        icon: const Icon(Icons.contacts_outlined),
+                        label: const Text('Mes contacts'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          padding: const EdgeInsets.only(top: 8, bottom: 12),
+          itemCount: conversations.length,
+          separatorBuilder: (_, __) => const Divider(height: 1, indent: 78),
+          itemBuilder: (context, index) {
+            final conversation = conversations[index];
+            return FutureBuilder<List<Map<String, dynamic>>>(
+              future: service.getConversationMembers(conversation['id'] as String),
+              builder: (context, membersSnapshot) {
+                final members = membersSnapshot.data ?? const [];
+                final names = members
+                    .where((row) => row['user_id'] != userId)
+                    .map((row) => (row['display_name'] as String? ?? '').trim())
+                    .where((name) => name.isNotEmpty)
+                    .toList();
+                final storedName = (conversation['name'] as String? ?? '').trim();
+                final title = storedName.isNotEmpty
+                    ? storedName
+                    : (names.isNotEmpty ? names.join(', ') : 'Discussion');
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                  leading: BiicAvatar(label: title, radius: 27),
+                  title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  subtitle: Text(conversation['is_group'] == true ? 'Groupe' : 'Discussion privée'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ChatPage(
+                        conversationId: conversation['id'] as String,
+                        title: title,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _CallsTab extends StatelessWidget {
+  const _CallsTab({required this.onStartCall});
+  final VoidCallback onStartCall;
+
+  @override
+  Widget build(BuildContext context) {
+    return _FeaturePendingTab(
+      icon: Icons.call_outlined,
+      title: 'Appels',
+      description: 'Les appels audio/vidéo peuvent être lancés depuis une discussion. L’historique des appels et les appels entrants intégrés ne sont pas encore enregistrés dans BIIC CHAT.',
+      actionLabel: 'Choisir un contact',
+      onAction: onStartCall,
+    );
+  }
+}
+
+class _FeaturePendingTab extends StatelessWidget {
+  const _FeaturePendingTab({
+    required this.icon,
+    required this.title,
+    required this.description,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 62, color: const Color(0xFFD71920)),
+              const SizedBox(height: 16),
+              Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              Text(description, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF777777), height: 1.45)),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 20),
+                FilledButton.icon(
+                  onPressed: onAction,
+                  icon: const Icon(Icons.person_search_outlined),
+                  label: Text(actionLabel!),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

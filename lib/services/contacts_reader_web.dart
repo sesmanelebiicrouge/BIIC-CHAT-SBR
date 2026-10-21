@@ -34,10 +34,16 @@ Future<List<Map<String, String>>> readDeviceContacts() async {
 
   final result = <Map<String, String>>[];
   for (final entry in contacts) {
-    final namesValue = js_util.getProperty<Object?>(entry, 'name');
-    final phonesValue = js_util.getProperty<Object?>(entry, 'tel');
-    final names = js_util.dartify(namesValue);
-    final phones = js_util.dartify(phonesValue);
+    // dartify converts browser objects to Dart maps on most Dart runtimes.
+    // Keep a JS-object fallback for runtimes that leave the entries unconverted.
+    final namesValue = entry is Map
+        ? entry['name']
+        : js_util.getProperty<Object?>(entry, 'name');
+    final phonesValue = entry is Map
+        ? entry['tel']
+        : js_util.getProperty<Object?>(entry, 'tel');
+    final names = namesValue is List ? namesValue : js_util.dartify(namesValue);
+    final phones = phonesValue is List ? phonesValue : js_util.dartify(phonesValue);
     final name = names is List && names.isNotEmpty ? names.first.toString() : '';
 
     if (phones is List) {

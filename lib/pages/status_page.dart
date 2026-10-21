@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/members_service.dart';
 import '../services/status_service.dart';
@@ -17,12 +18,10 @@ class StatusPage extends StatefulWidget {
 class _StatusPageState extends State<StatusPage> {
   final _service = StatusService();
   final _members = MembersService();
-  final _text = TextEditingController();
   List<Map<String, dynamic>> _statuses = const [];
   Map<String, String> _names = const {};
   bool _loading = true;
   bool _publishing = false;
-  String _audience = 'contacts';
 
   @override
   void initState() {
@@ -87,7 +86,6 @@ class _StatusPageState extends State<StatusPage> {
   }
 
   Future<void> _publishText() async {
-    _text.text = '';
     final audience = await _chooseAudience();
     if (audience == null || !mounted) return;
     final controller = TextEditingController();
@@ -278,7 +276,6 @@ class _StatusPageState extends State<StatusPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = StatusService;
     return Scaffold(
       appBar: widget.showAppBar ? AppBar(title: const Text('Statuts')) : null,
       body: Column(
@@ -390,17 +387,7 @@ class _StatusPageState extends State<StatusPage> {
     );
   }
 
-  String get _serviceUserId => _currentUserId;
-  String get _currentUserId => _userIdFromClient;
-  String get _userIdFromClient {
-    // Supabase user id is retrieved through the same authenticated client.
-    // This getter is replaced by the client-backed helper below.
-    return '';
-  }
-
-  @override
-  void dispose() {
-    _text.dispose();
-    super.dispose();
-  }
+  String get _serviceUserId =>
+      Supabase.instance.client.auth.currentUser?.id ?? '';
+}
 }

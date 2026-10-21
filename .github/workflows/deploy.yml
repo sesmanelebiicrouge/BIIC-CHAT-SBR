@@ -112,7 +112,7 @@ jobs:
               '<meta name="description" content="A new Flutter project.">',
               '<meta name="description" content="BIIC CHAT SBR espace NOUCHI est une application de messagerie instantanée permettant d’échanger des messages, de créer des groupes et de partager des médias en ligne.">'
           )
-          s = s.replace("</head>", '''  <meta name="google-site-verification" content="cWgvvBx_bxvIABAnDz2XsY9-mtoICnqHkfrhUw2acLk" />
+          s = s.replace("</head>", '''  <link rel="icon" type="image/png" sizes="48x48" href="biic_favicon_48.png">\n          <meta name="google-site-verification" content="cWgvvBx_bxvIABAnDz2XsY9-mtoICnqHkfrhUw2acLk" />
           <meta name="application-name" content="BIIC CHAT SBR espace NOUCHI">
           <meta name="apple-mobile-web-app-title" content="BIIC CHAT SBR espace NOUCHI">
           <link rel="canonical" href="https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/">

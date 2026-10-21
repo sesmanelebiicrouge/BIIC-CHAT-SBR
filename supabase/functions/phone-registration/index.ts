@@ -27,14 +27,23 @@ Deno.serve(async (req) => {
   const authClient = createClient(url, anon, { global: { headers: { Authorization: "Bearer " + token } } });
   const { data: { user }, error: authError } = await authClient.auth.getUser(token);
   if (authError || !user) return reply({ error: "Session invalide. Reconnectez-vous." }, 401);
-  const email = user.email?.trim().toLowerCase();
-  if (!email) return reply({ error: "Ce compte ne possède pas d'adresse e-mail enregistrée." }, 400);
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-  let body: { action?: string; phone?: string; code?: string };
+  let body: { action?: string; phone?: string; code?: string; email?: string };
   try { body = await req.json(); } catch { return reply({ error: "Requête invalide." }, 400); }
+  const { data: profile, error: profileError } = await admin
+    .from("users").select("registration_email").eq("id", user.id).maybeSingle();
+  if (profileError) {
+    console.error("registration email lookup failed", profileError);
+    return reply({ error: "Impossible de lire l’adresse e-mail du compte." }, 500);
+  }
+  // New phone accounts save this address at sign-up. Existing phone-only accounts
+  // may add one here; it is persisted only after the OTP is successfully verified.
+  const email = (profile?.registration_email || user.email || body.email || "").trim().toLowerCase();
 
   try {
     if (body.action === "start") {
+      if (!email) return reply({ error: "Ajoutez une adresse e-mail au compte avant de valider ce numéro." }, 400);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({ error: "Adresse e-mail invalide." }, 400);
       const phone = normalize(body.phone ?? "");
       const { data: used, error: usedError } = await admin.from("users").select("id").eq("registered_phone", phone).not("phone_verified_at", "is", null).limit(1);
       if (usedError) throw usedError;
@@ -44,10 +53,10 @@ Deno.serve(async (req) => {
       if (prior?.last_sent_at && Date.now() - new Date(prior.last_sent_at).getTime() < 60_000) return reply({ error: "Attendez une minute avant de demander un nouveau code." }, 429);
       const random = new Uint32Array(1); crypto.getRandomValues(random);
       const code = String(random[0] % 1_000_000).padStart(6, "0");
-      const codeHash = await hash(user.id + ":" + phone + ":" + code + ":" + serviceKey);
+      const codeHash = await hash(user.id + ":" + phone + ":" + email + ":" + code + ":" + serviceKey);
       const now = new Date();
       const { error: saveError } = await admin.from("phone_registration_codes").upsert({
-        user_id: user.id, phone, code_hash: codeHash,
+        user_id: user.id, phone, email, code_hash: codeHash,
         expires_at: new Date(now.getTime() + 600_000).toISOString(),
         attempts: 0, last_sent_at: now.toISOString(), consumed_at: null,
       });
@@ -68,11 +77,11 @@ Deno.serve(async (req) => {
     if (body.action === "verify") {
       const code = (body.code ?? "").trim();
       if (!/^\d{6}$/.test(code)) return reply({ error: "Saisissez le code à 6 chiffres reçu par e-mail." }, 400);
-      const { data: challenge, error } = await admin.from("phone_registration_codes").select("phone,code_hash,expires_at,attempts,consumed_at").eq("user_id", user.id).maybeSingle();
+      const { data: challenge, error } = await admin.from("phone_registration_codes").select("phone,email,code_hash,expires_at,attempts,consumed_at").eq("user_id", user.id).maybeSingle();
       if (error) throw error;
       if (!challenge || challenge.consumed_at || new Date(challenge.expires_at).getTime() < Date.now()) return reply({ error: "Code expiré. Demandez un nouveau code." }, 400);
       if (challenge.attempts >= 5) return reply({ error: "Trop de tentatives. Demandez un nouveau code." }, 429);
-      const supplied = await hash(user.id + ":" + challenge.phone + ":" + code + ":" + serviceKey);
+      const supplied = await hash(user.id + ":" + challenge.phone + ":" + challenge.email + ":" + code + ":" + serviceKey);
       if (supplied !== challenge.code_hash) {
         await admin.from("phone_registration_codes").update({ attempts: challenge.attempts + 1 }).eq("user_id", user.id);
         return reply({ error: "Code incorrect." }, 400);
@@ -80,7 +89,11 @@ Deno.serve(async (req) => {
       const { data: conflict, error: conflictError } = await admin.from("users").select("id").eq("registered_phone", challenge.phone).not("phone_verified_at", "is", null).limit(1);
       if (conflictError) throw conflictError;
       if (conflict?.some((row) => row.id !== user.id)) return reply({ error: "Ce numéro est déjà enregistré sur BIIC CHAT." }, 409);
-      const { error: updateError } = await admin.from("users").update({ registered_phone: challenge.phone, phone_verified_at: new Date().toISOString() }).eq("id", user.id);
+      const { error: updateError } = await admin.from("users").update({
+        registration_email: challenge.email,
+        registered_phone: challenge.phone,
+        phone_verified_at: new Date().toISOString(),
+      }).eq("id", user.id);
       if (updateError) throw updateError;
       await admin.from("phone_registration_codes").update({ consumed_at: new Date().toISOString() }).eq("user_id", user.id);
       return reply({ message: "Numéro enregistré et validé. Vous pouvez maintenant être trouvé sur BIIC CHAT.", phone: challenge.phone });

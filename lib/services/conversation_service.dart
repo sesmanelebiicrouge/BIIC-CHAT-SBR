@@ -194,8 +194,6 @@ class ConversationService {
     final userId = _requireAuthenticatedUserId();
     await _supabase.from('messages').update({
       'content': '',
-      'media_url': null,
-      'media_type': null,
       'deleted_at': DateTime.now().toUtc().toIso8601String(),
       'edited_at': DateTime.now().toUtc().toIso8601String(),
       'is_pinned': false,

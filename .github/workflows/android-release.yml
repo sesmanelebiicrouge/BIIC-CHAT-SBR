@@ -115,6 +115,11 @@ jobs:
         run: |
           grep -q 'applicationId = "com.biicchat.biic_chat_sbr"' android/app/build.gradle.kts
           grep -q 'targetSdk = 36' android/app/build.gradle.kts
+          grep -q 'android.permission.CAMERA' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.READ_CONTACTS' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.ACCESS_FINE_LOCATION' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.RECORD_AUDIO' android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml
           test -s android/upload-keystore.jks
           test -s android/key.properties
 

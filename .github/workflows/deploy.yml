@@ -100,6 +100,11 @@ jobs:
 
           p = Path("web/index.html")
           s = p.read_text()
+          import os
+          build_id = os.environ.get("GITHUB_SHA", "latest")[:12]
+          # Version browser-visible assets to avoid stale cached logos after deployment.
+          s = s.replace('href="favicon.png"', f'href="biic_logo.png?v={build_id}"')
+          s = s.replace('href="manifest.json"', f'href="manifest.json?v={build_id}"')
           s = s.replace(
               '<meta name="description" content="A new Flutter project.">',
               '<meta name="description" content="BIIC CHAT (BigChat) — application de messagerie instantanée pour échanger des messages, créer des groupes et partager des médias en ligne, notamment en Côte d’Ivoire.">'
@@ -122,7 +127,12 @@ jobs:
           {"@context":"https://schema.org","@type":"SoftwareApplication","name":"BIIC CHAT","alternateName":"BigChat","applicationCategory":"CommunicationApplication","operatingSystem":"Web","description":"BIIC CHAT (BigChat) — application de messagerie instantanée pour échanger des messages, créer des groupes et partager des médias.","url":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/","image":"https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png","sameAs":["https://github.com/sesmanelebiicrouge/BIIC-CHAT-SBR"]}
           </script>
           </head>''')
-          s = s.replace("<body>", '''<body>
+          s = s.replace(
+              'https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png"',
+              f'https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/biic_logo.png?v={build_id}"'
+          )
+          s = s.replace("</head>", f'<link rel="apple-touch-icon" href="biic_logo_192.png?v={build_id}">\\n</head>')
+                    s = s.replace("<body>", '''<body>
           <noscript>
             <main>
               <h1>BIIC CHAT (BigChat)</h1>
@@ -207,6 +217,7 @@ jobs:
           PY
           rsvg-convert -w 192 -h 192 -o web/biic_logo_192.png assets/biic_logo.svg
           rsvg-convert -w 512 -h 512 -o web/biic_logo.png assets/biic_logo.svg
+          cp web/biic_logo.png web/favicon.png
 
       - name: Build Web release
         run: |

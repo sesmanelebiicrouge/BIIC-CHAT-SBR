@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/contacts_service.dart';
 import '../services/conversation_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'chat_page.dart';
+import 'members_page.dart';
 
 class ContactsPage extends StatefulWidget {
-  const ContactsPage({super.key});
+  const ContactsPage({super.key, this.showAppBar = true});
+
+  final bool showAppBar;
   @override
   State<ContactsPage> createState() => _ContactsPageState();
 }
@@ -120,7 +124,7 @@ class _ContactsPageState extends State<ContactsPage> {
     final notAvailable = _items.where((item) => !item.isOnBiicChat).toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Contacts BIIC CHAT')),
+      appBar: widget.showAppBar ? AppBar(title: const Text('Contacts BIIC CHAT')) : null,
       body: _items.isEmpty && !_loading
           ? Center(
               child: Padding(
@@ -144,11 +148,22 @@ class _ContactsPageState extends State<ContactsPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-                    FilledButton.icon(
-                      onPressed: _import,
-                      icon: const Icon(Icons.sync),
-                      label: const Text('Importer mes contacts'),
-                    ),
+                    if (kIsWeb)
+                      FilledButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const MembersPage(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.search),
+                        label: const Text('Rechercher des membres'),
+                      )
+                    else
+                      FilledButton.icon(
+                        onPressed: _import,
+                        icon: const Icon(Icons.sync),
+                        label: const Text('Importer mes contacts'),
+                      ),
                   ],
                 ),
               ),

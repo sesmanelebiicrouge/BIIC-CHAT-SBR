@@ -5,7 +5,7 @@ BIIC CHAT est une application Flutter de messagerie multiplateforme, conçue pou
 ## Fonctionnalités
 
 ### Compte et sécurité
-- inscription et connexion par téléphone/mot de passe ;
+- inscription et connexion par téléphone/mot de passe, avec adresse e-mail de validation demandée à la création d’un compte par téléphone ;
 - vérification du numéro par SMS ;
 - récupération du mot de passe par SMS ;
 - profil utilisateur créé automatiquement après inscription ;
@@ -69,8 +69,15 @@ Fichiers actuellement présents :
 - `016_fix_contact_hash_extension_search_path.sql`
 - `016_harden_function_search_paths.sql`
 - `017_rls_performance_and_block_privacy.sql`
+- `20261021133331_block_aware_direct_conversations.sql`
+- `20261021133449_bound_contact_sync_payload.sql`
+- `20261021133521_protect_user_identity_columns.sql`
+- `20261021133620_skip_invalid_contact_phones.sql`
+- `20261021140000_email_verified_phone_registration.sql`
+- `20261021140100_phone_directory_lookup.sql`
+- `20261021141500_registration_email_for_phone_accounts.sql`
 
-Ne renommez pas ces fichiers et ne relancez pas leurs SQL à l'aveugle sur la base de production : il faut d'abord vérifier l'historique réel des migrations dans Supabase et préparer une migration de réconciliation compatible avec cet historique. L'accès Supabase n'étant pas disponible via la connexion actuelle, cette vérification distante n'a pas pu être effectuée pendant la préparation de la version 1.0.2.
+Les migrations horodatées ci-dessus sont en cours d’ajout dans la branche de fonctionnalité. Ne renommez pas les anciennes migrations et ne relancez pas leurs SQL à l'aveugle sur la base de production : il faut d'abord vérifier l'historique réel des migrations dans Supabase et préparer une migration de réconciliation compatible avec cet historique. L'accès Supabase n'étant pas disponible via la connexion actuelle, cette vérification distante n'a pas pu être effectuée pendant la préparation de la version 1.0.2.
 
 Le script `supabase/manual/BIIC_CHAT_REPAIR_013_016.sql` est un correctif manuel ciblé, pas un remplacement complet de toutes les migrations. Faites une sauvegarde et comparez son contenu à l'état réel de la base avant exécution. Après toute migration, vérifiez que Realtime est activé pour les tables utilisées et que les buckets `chat-media` et `avatars` restent privés.
 

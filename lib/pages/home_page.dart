@@ -7,6 +7,8 @@ import 'contacts_page.dart';
 import 'chat_page.dart';
 import 'profile_page.dart';
 import 'settings_page.dart';
+import 'status_page.dart';
+import 'call_history_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -36,7 +38,6 @@ class _HomePageState extends State<HomePage> {
     final user = service.client.auth.currentUser;
     if (user == null) return const MembersPage();
 
-    final titles = ['Discussions', 'Statuts', 'Appels', 'Contacts'];
     return Scaffold(
       appBar: AppBar(
         title: const BiicBrand(iconSize: 36, showSubtitle: false),
@@ -87,12 +88,8 @@ class _HomePageState extends State<HomePage> {
         index: _tab,
         children: [
           _ConversationsTab(service: service, userId: user.id, onNewChat: _newChat, onContacts: () => setState(() => _tab = 3)),
-          const _FeaturePendingTab(
-            icon: Icons.donut_large,
-            title: 'Statuts',
-            description: 'La rubrique est prête dans la navigation, mais la publication et l’expiration des statuts ne sont pas encore implémentées. Les statuts ne seront affichés ici qu’une fois cette fonction reliée au serveur.',
-          ),
-          _CallsTab(onStartCall: _newChat),
+          const StatusPage(showAppBar: false),
+          CallHistoryPage(showAppBar: false, onStartCall: _newChat),
           const ContactsPage(showAppBar: false),
         ],
       ),
@@ -242,64 +239,3 @@ class _ConversationsTab extends StatelessWidget {
   }
 }
 
-class _CallsTab extends StatelessWidget {
-  const _CallsTab({required this.onStartCall});
-  final VoidCallback onStartCall;
-
-  @override
-  Widget build(BuildContext context) {
-    return _FeaturePendingTab(
-      icon: Icons.call_outlined,
-      title: 'Appels',
-      description: 'Les appels audio/vidéo peuvent être lancés depuis une discussion. L’historique des appels et les appels entrants intégrés ne sont pas encore enregistrés dans BIIC CHAT.',
-      actionLabel: 'Choisir un contact',
-      onAction: onStartCall,
-    );
-  }
-}
-
-class _FeaturePendingTab extends StatelessWidget {
-  const _FeaturePendingTab({
-    required this.icon,
-    required this.title,
-    required this.description,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  final IconData icon;
-  final String title;
-  final String description;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 62, color: const Color(0xFFD71920)),
-              const SizedBox(height: 16),
-              Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 10),
-              Text(description, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF777777), height: 1.45)),
-              if (actionLabel != null && onAction != null) ...[
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: onAction,
-                  icon: const Icon(Icons.person_search_outlined),
-                  label: Text(actionLabel!),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

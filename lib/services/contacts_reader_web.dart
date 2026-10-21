@@ -1,16 +1,31 @@
-import 'dart:js_util' as js_util;
+import 'dart:js_interop';
+
+@JS('navigator.contacts')
+external JSObject? get _browserContacts;
+
+@JS('navigator.contacts.select')
+external JSPromise<JSArray<JSObject>> _selectBrowserContacts(
+  JSArray<JSString> properties,
+  _ContactPickerOptions options,
+);
+
+@JS()
+@anonymous
+extension type _ContactPickerOptions._(JSObject _) implements JSObject {
+  external factory _ContactPickerOptions({bool multiple});
+}
+
+@JS()
+@anonymous
+extension type _BrowserContact._(JSObject _) implements JSObject {
+  external JSArray<JSString>? get name;
+  external JSArray<JSString>? get tel;
+}
 
 /// Uses the browser Contact Picker API where available (notably Chrome on
-/// Android). The browser opens its own picker and only returns contacts chosen
-/// explicitly by the user. It must be called directly from a user gesture.
+/// Android). Only contacts explicitly chosen by the user are returned.
 Future<List<Map<String, String>>> readDeviceContacts() async {
-  final navigator = js_util.getProperty<Object?>(js_util.globalThis, 'navigator');
-  final contactsApi = js_util.getProperty<Object?>(navigator, 'contacts');
-  final select = contactsApi == null
-      ? null
-      : js_util.getProperty<Object?>(contactsApi, 'select');
-
-  if (contactsApi == null || select == null) {
+  if (_browserContacts == null) {
     throw UnsupportedError(
       'Ce navigateur ne permet pas d’ouvrir le répertoire directement. '
       'Ouvrez BIIC CHAT dans Chrome sur Android, puis réessayez, ou utilisez '
@@ -18,40 +33,23 @@ Future<List<Map<String, String>>> readDeviceContacts() async {
     );
   }
 
-  // Do not insert an await before this call: browsers require a direct user
-  // gesture for the native contact picker.
-  final promise = js_util.callMethod<Object?>(
-    contactsApi,
-    'select',
-    [
-      js_util.jsify(['name', 'tel']),
-      js_util.jsify({'multiple': true}),
-    ],
-  );
-  final selected = await js_util.promiseToFuture<Object?>(promise);
-  final contacts = js_util.dartify(selected);
-  if (contacts is! List) return const [];
+  // Call immediately from the button tap: browsers require a user gesture.
+  final selected = await _selectBrowserContacts(
+    ['name'.toJS, 'tel'.toJS].toJS,
+    _ContactPickerOptions(multiple: true),
+  ).toDart;
 
   final result = <Map<String, String>>[];
-  for (final entry in contacts) {
-    // dartify converts browser objects to Dart maps on most Dart runtimes.
-    // Keep a JS-object fallback for runtimes that leave the entries unconverted.
-    final namesValue = entry is Map
-        ? entry['name']
-        : js_util.getProperty<Object?>(entry, 'name');
-    final phonesValue = entry is Map
-        ? entry['tel']
-        : js_util.getProperty<Object?>(entry, 'tel');
-    final names = namesValue is List ? namesValue : js_util.dartify(namesValue);
-    final phones = phonesValue is List ? phonesValue : js_util.dartify(phonesValue);
-    final name = names is List && names.isNotEmpty ? names.first.toString() : '';
+  for (final rawContact in selected.toDart) {
+    final contact = _BrowserContact(rawContact);
+    final names = contact.name?.toDart ?? const <JSString>[];
+    final phones = contact.tel?.toDart ?? const <JSString>[];
+    final name = names.isNotEmpty ? names.first.toDart : '';
 
-    if (phones is List) {
-      for (final phone in phones) {
-        final value = phone.toString().trim();
-        if (value.isNotEmpty) {
-          result.add({'display_name': name, 'phone': value});
-        }
+    for (final phone in phones) {
+      final value = phone.toDart.trim();
+      if (value.isNotEmpty) {
+        result.add({'display_name': name, 'phone': value});
       }
     }
   }

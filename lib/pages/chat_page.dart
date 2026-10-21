@@ -9,6 +9,7 @@ import '../services/conversation_service.dart';
 import '../services/media_service.dart';
 import '../services/device_permissions_service.dart';
 import '../services/location_share_service.dart';
+import '../services/call_history_service.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -61,19 +62,40 @@ class _ChatPageState extends State<ChatPage> {
     } finally { if (mounted) setState(() => _sending = false); }
   }
 
-  Future<void> _startAudioCall() async {
-    final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
-    final uri = Uri.parse('https://meet.jit.si/$room');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de démarrer l’appel audio.')));
-    }
-  }
+  Future<void> _startAudioCall() => _startExternalCall('audio');
 
-  Future<void> _startVideoCall() async {
+  Future<void> _startVideoCall() => _startExternalCall('video');
+
+  Future<void> _startExternalCall(String callType) async {
+    // Keep a record of the attempt. Jitsi is still opened externally; this
+    // does not implement incoming-call signalling or prove the other person joined.
+    try {
+      await CallHistoryService().recordOutgoingCall(
+        conversationId: widget.conversationId,
+        callType: callType,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('L’appel peut être lancé, mais son historique n’a pas pu être enregistré : $e')),
+        );
+      }
+    }
     final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
     final uri = Uri.parse('https://meet.jit.si/$room');
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de démarrer l’appel vidéo.')));
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Impossible de démarrer l’appel ${callType == 'audio' ? 'audio' : 'vidéo'}.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du lancement de l’appel : $e')),
+        );
+      }
     }
   }
 

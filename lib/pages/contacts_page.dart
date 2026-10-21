@@ -21,6 +21,36 @@ class _ContactsPageState extends State<ContactsPage> {
   bool _loading = false;
 
   Future<void> _import() async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sur le Web, recherchez les membres BIIC CHAT par leur nom ou numéro. L’import du répertoire est disponible sur Android/iOS.'),
+        ),
+      );
+      return;
+    }
+
+    final consent = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Autoriser l’accès aux contacts ?'),
+        content: const Text(
+          'BIIC CHAT peut lire les noms et numéros de votre répertoire pour repérer les personnes inscrites et vous permettre de démarrer une discussion. Les contacts ne sont importés qu’après votre accord et l’autorisation du système. Vous pouvez refuser et continuer à rechercher des membres manuellement.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Pas maintenant'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Continuer'),
+          ),
+        ],
+      ),
+    );
+    if (consent != true || !mounted) return;
+
     setState(() => _loading = true);
     try {
       final items = await _contacts.importDeviceContacts();

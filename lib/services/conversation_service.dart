@@ -7,6 +7,20 @@ class ConversationService {
 
   SupabaseClient get client => _supabase;
 
+  String _requireAuthenticatedUserId() {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null || userId.isEmpty) {
+      throw StateError('Utilisateur non connecté.');
+    }
+    return userId;
+  }
+
+  void _assertCallerIsAuthenticatedUser(String claimedUserId) {
+    if (_requireAuthenticatedUserId() != claimedUserId.trim()) {
+      throw StateError('Action refusée : identité utilisateur incohérente.');
+    }
+  }
+
   Future<String> createConversation({
     required String name,
     required String createdBy,
@@ -21,6 +35,7 @@ class ConversationService {
     if (creator.isEmpty || members.length < 2) {
       throw ArgumentError('Une conversation doit avoir au moins deux membres.');
     }
+    _assertCallerIsAuthenticatedUser(creator);
     if (isGroup && name.trim().isEmpty) {
       throw ArgumentError('Le nom du groupe est obligatoire.');
     }
@@ -50,6 +65,7 @@ class ConversationService {
     if (uid.isEmpty || other.isEmpty || uid == other) {
       throw ArgumentError('Membres invalides.');
     }
+    _assertCallerIsAuthenticatedUser(uid);
 
     final response = await _supabase.rpc(
       'get_or_create_direct_conversation',
@@ -97,6 +113,7 @@ class ConversationService {
       throw ArgumentError(
           'A message needs a conversation, sender and content/media.');
     }
+    _assertCallerIsAuthenticatedUser(senderId);
     await _supabase.from('messages').insert({
       'conversation_id': conversationId.trim(),
       'sender_id': senderId.trim(),
@@ -116,6 +133,7 @@ class ConversationService {
     final conversation = conversationId.trim();
     final ids = messageIds.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
     if (uid.isEmpty || conversation.isEmpty || ids.isEmpty) return;
+    _assertCallerIsAuthenticatedUser(uid);
 
     await _supabase.from('message_reads').upsert(
       ids

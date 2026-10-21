@@ -283,7 +283,7 @@ class _ChatPageState extends State<ChatPage> {
       }
       return;
     }
-    final permission = await FlutterContacts.permissions.request(PermissionType.readWrite);
+    final permission = await FlutterContacts.permissions.request(PermissionType.read);
     if (permission != PermissionStatus.granted) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Accès aux contacts refusé.')));
       return;

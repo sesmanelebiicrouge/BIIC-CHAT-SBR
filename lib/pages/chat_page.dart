@@ -34,6 +34,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _uploading = false;
   Map<String, dynamic>? _replyToMessage;
   String? _editingMessageId;
+  String _searchQuery = '';
   final Set<String> _readMarked = <String>{};
 
   Future<void> _markIncomingAsRead(
@@ -199,6 +200,32 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _searchMessages() async {
+    final controller = TextEditingController(text: _searchQuery);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Rechercher dans la discussion'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Mot ou expression...',
+            prefixIcon: Icon(Icons.search),
+          ),
+          onSubmitted: (value) => Navigator.pop(dialogContext, value),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, ''), child: const Text('Effacer')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, controller.text), child: const Text('Rechercher')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (value != null && mounted) setState(() => _searchQuery = value.trim());
   }
 
   Future<void> _archiveConversation() async {
@@ -604,6 +631,11 @@ class _ChatPageState extends State<ChatPage> {
             icon: const Icon(Icons.videocam_outlined),
             onPressed: _startVideoCall,
           ),
+          IconButton(
+            tooltip: 'Rechercher dans la discussion',
+            icon: const Icon(Icons.search),
+            onPressed: _searchMessages,
+          ),
           PopupMenuButton<String>(
             tooltip: 'Options de discussion',
             onSelected: (value) {
@@ -637,10 +669,32 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                   );
                 }
-                final messages = snapshot.data ?? const <Map<String, dynamic>>[];
-                _markIncomingAsRead(messages, userId);
-                if (messages.isEmpty) {
+                final allMessages = snapshot.data ?? const <Map<String, dynamic>>[];
+                _markIncomingAsRead(allMessages, userId);
+                if (allMessages.isEmpty) {
                   return const Center(child: Text('Aucun message. Écrivez le premier !'));
+                }
+                final messages = _searchQuery.isEmpty
+                    ? allMessages
+                    : allMessages.where((message) =>
+                        (message['content'] as String? ?? '')
+                            .toLowerCase()
+                            .contains(_searchQuery.toLowerCase()))
+                        .toList();
+                if (messages.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Aucun message correspondant.'),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => setState(() => _searchQuery = ''),
+                          child: const Text('Effacer la recherche'),
+                        ),
+                      ],
+                    ),
+                  );
                 }
                 return StreamBuilder<List<Map<String, dynamic>>>(
                   stream: _service.watchMessageReads(widget.conversationId),
@@ -669,7 +723,7 @@ class _ChatPageState extends State<ChatPage> {
                             final replyId = message['reply_to_message_id']?.toString();
                             Map<String, dynamic>? reply;
                             if (replyId != null) {
-                              for (final candidate in messages) {
+                              for (final candidate in allMessages) {
                                 if (candidate['id']?.toString() == replyId) {
                                   reply = candidate;
                                   break;

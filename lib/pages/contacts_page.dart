@@ -178,22 +178,22 @@ class _ContactsPageState extends State<ContactsPage> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-                    if (kIsWeb)
+                    if (!kIsWeb)
                       FilledButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const MembersPage(),
-                          ),
-                        ),
-                        icon: const Icon(Icons.search),
-                        label: const Text('Rechercher des membres'),
-                      )
-                    else
-                      FilledButton.icon(
-                        onPressed: _import,
+                        onPressed: _loading ? null : _import,
                         icon: const Icon(Icons.sync),
                         label: const Text('Importer mes contacts'),
                       ),
+                    if (!kIsWeb) const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const MembersPage(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.search),
+                      label: const Text('Rechercher par nom ou numéro'),
+                    ),
                   ],
                 ),
               ),
@@ -201,19 +201,35 @@ class _ContactsPageState extends State<ContactsPage> {
           : Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                  child: FilledButton.icon(
-                    onPressed: _loading ? null : _import,
-                    icon: _loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.sync),
-                    label: Text(_loading
-                        ? 'Importation...'
-                        : 'Actualiser mes contacts'),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _loading || kIsWeb ? null : _import,
+                          icon: _loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.sync),
+                          label: Text(_loading ? 'Importation...' : 'Actualiser'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => const MembersPage(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.search),
+                          label: const Text('Rechercher'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(

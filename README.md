@@ -7,6 +7,7 @@ BIIC CHAT est une application Flutter de messagerie multiplateforme, conçue pou
 ### Compte et sécurité
 - inscription et connexion par téléphone/mot de passe ;
 - vérification du numéro par SMS ;
+- parcours prévu de validation du numéro BIIC CHAT par code envoyé à l’e-mail du compte (voir les prérequis dans `docs/PHONE_REGISTRATION_EMAIL_OTP.md`) ;
 - récupération du mot de passe par SMS ;
 - profil utilisateur créé automatiquement après inscription ;
 - Row Level Security (RLS) sur les données privées ;
@@ -15,18 +16,20 @@ BIIC CHAT est une application Flutter de messagerie multiplateforme, conçue pou
 - aucune clé secrète de service Supabase dans l'application.
 
 ### Messagerie
-- liste des conversations ;
-- recherche de membres ;
-- création de conversations privées ;
-- messages persistants dans Supabase ;
-- réception temps réel via Supabase Realtime ;
-- pièces jointes : images, photos, fichiers et contacts.
+- liste des conversations, discussions privées et groupes ;
+- recherche des membres et correspondance des contacts de l’appareil ;
+- messages persistants dans Supabase et réception temps réel via Supabase Realtime ;
+- accusés de lecture ;
+- pièces jointes : images, photos, vidéos, fichiers et contacts ;
+- partage volontaire de la position courante sous forme de lien Google Maps ;
+- appels audio/vidéo lancés dans un service externe.
 
-### Accessibilité et expérience
-- interface Material 3 ;
-- navigation simple ;
-- états de chargement et erreurs ;
-- préparation Android, iOS et Web.
+### Confidentialité et expérience
+- permissions demandées au moment où une fonctionnalité est utilisée ;
+- sélecteurs système pour choisir photos, vidéos et documents, sans accès global au stockage ;
+- blocage et signalement d’utilisateurs ;
+- profil, suppression du compte et configuration de la double authentification ;
+- interface Material 3 et états de chargement/erreur.
 
 ## Architecture
 - Flutter / Dart
@@ -46,44 +49,18 @@ Le client Flutter utilise une clé publique Supabase via les options de compilat
 
 **Attention : l'historique des migrations doit être réconcilié avant d'utiliser `supabase db push`.** Le dépôt contient plusieurs fichiers portant le même préfixe de version (`013`, `014`, `015` et `016`). Le CLI Supabase utilise ce préfixe comme version de migration ; ces doublons peuvent bloquer l'application automatisée ou provoquer un historique incohérent.
 
-Fichiers actuellement présents :
-
-- `001_initial_schema.sql`
-- `002_members_auth_hardening.sql`
-- `003_chat_media_storage.sql`
-- `004_rls_realtime_fix.sql`
-- `005_profiles_reports_safety.sql`
-- `006_privacy_hardening.sql`
-- `007_phone_accounts_and_deletion.sql`
-- `008_imported_contacts.sql`
-- `009_message_read_receipts.sql`
-- `010_chat_reliability.sql`
-- `011_scope_read_receipts.sql`
-- `012_atomic_direct_conversations.sql`
-- `013_normalize_ci_contact_phones.sql`
-- `013_production_reliability.sql`
-- `014_enforce_blocks_on_direct_chats.sql`
-- `014_harden_rls_auto_enable.sql`
-- `015_privacy_scope_block_checks.sql`
-- `015_production_security_performance.sql`
-- `016_fix_contact_hash_extension_search_path.sql`
-- `016_harden_function_search_paths.sql`
-- `017_rls_performance_and_block_privacy.sql`
-
-Ne renommez pas ces fichiers et ne relancez pas leurs SQL à l'aveugle sur la base de production : il faut d'abord vérifier l'historique réel des migrations dans Supabase et préparer une migration de réconciliation compatible avec cet historique. L'accès Supabase n'étant pas disponible via la connexion actuelle, cette vérification distante n'a pas pu être effectuée pendant la préparation de la version 1.0.2.
-
-Le script `supabase/manual/BIIC_CHAT_REPAIR_013_016.sql` est un correctif manuel ciblé, pas un remplacement complet de toutes les migrations. Faites une sauvegarde et comparez son contenu à l'état réel de la base avant exécution. Après toute migration, vérifiez que Realtime est activé pour les tables utilisées et que les buckets `chat-media` et `avatars` restent privés.
+Les migrations de validation e-mail/téléphone ajoutées sur la branche de fonctionnalité doivent être examinées et appliquées après vérification de l’historique réel de la base. Ne renommez pas les anciennes migrations et ne relancez pas leurs SQL à l’aveugle sur la production. Faites une sauvegarde, réconciliez l’historique distant et vérifiez RLS, Realtime ainsi que les buckets privés `chat-media` et `avatars`.
 
 ## SMS OTP Orange Côte d'Ivoire
 
-La fonction supabase/functions/send-sms/index.ts doit être déployée séparément dans Supabase Edge Functions. La publication GitHub Pages du site ne déploie pas cette fonction et n'applique pas les migrations SQL.
+La fonction `supabase/functions/send-sms/index.ts` doit être déployée séparément dans Supabase Edge Functions. La publication GitHub Pages du site ne déploie pas cette fonction et n'applique pas les migrations SQL.
 
 Configurer uniquement dans les secrets de la fonction Supabase :
-- ORANGE_SMS_CLIENT_ID
-- ORANGE_SMS_CLIENT_SECRET
-- ORANGE_SMS_SENDER
-- SEND_SMS_HOOK_SECRET
-- ORANGE_SMS_SENDER_NAME seulement si Orange a approuvé ce nom.
+- `ORANGE_SMS_CLIENT_ID`
+- `ORANGE_SMS_CLIENT_SECRET`
+- `ORANGE_SMS_SENDER`
+- `SEND_SMS_HOOK_SECRET`
+- `ORANGE_SMS_SENDER_NAME` seulement si Orange a approuvé ce nom.
 
 Dans Supabase Auth, activer le hook Send SMS et utiliser le même secret de signature que celui configuré pour la fonction. Vérifier les journaux Supabase et l'accès Orange (API SMS Côte d'Ivoire, autorisation du sender et crédits SMS) si l'envoi échoue. Ne jamais mettre ces secrets dans le code client, dans GitHub ou dans une conversation.
 
@@ -98,7 +75,7 @@ Dans Supabase Auth, activer le hook Send SMS et utiliser le même secret de sign
 
 ## Publication Web
 
-Le workflow .github/workflows/deploy.yml reconstruit l'application web lors d'un push sur main, puis publie le résultat sur la branche gh-pages. Il injecte l'URL Supabase et la clé publique de compilation depuis le workflow. Un déploiement Web réussi ne garantit pas que les secrets Orange, le hook SMS ou les migrations Supabase sont correctement configurés.
+Le workflow `.github/workflows/deploy.yml` reconstruit l'application web lors d'un push sur `main`, puis publie le résultat sur la branche `gh-pages`. Il injecte l'URL Supabase et la clé publique de compilation depuis le workflow. Un déploiement Web réussi ne garantit pas que les secrets Orange, le hook SMS ou les migrations Supabase sont correctement configurés.
 
 URL publique :
 https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/

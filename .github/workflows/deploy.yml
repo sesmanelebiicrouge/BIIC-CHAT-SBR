@@ -147,8 +147,8 @@ jobs:
             </main>
           </noscript>''')
           s = s.replace(
-              '<meta name="apple-mobile-web-app-title" content="BIIC CHAT SBR espace NOUCHI">',
-              '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">'
+              '<meta name="apple-mobile-web-app-title" content="BIIC CHAT">',
+              '<meta name="apple-mobile-web-app-title" content="BIIC CHAT SBR espace NOUCHI">'
           )
           s = s.replace("<title>biic_chat_sbr</title>", "<title>BIIC CHAT SBR espace NOUCHI — Messagerie instantanée</title>")
           install_script = r"""

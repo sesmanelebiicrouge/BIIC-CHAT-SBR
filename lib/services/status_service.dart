@@ -16,7 +16,6 @@ class StatusService {
   }
 
   Future<List<Map<String, dynamic>>> getVisibleStatuses() async {
-    _userId;
     final rows = await _client
         .from('statuses')
         .select('id,user_id,content,media_path,media_type,audience,created_at,expires_at')
@@ -65,6 +64,15 @@ class StatusService {
     final safeName = fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
     final path = '$userId/${DateTime.now().microsecondsSinceEpoch}_${safeName.isEmpty ? 'status.bin' : safeName}';
     final extension = safeName.toLowerCase();
+    if (mediaType == 'image' &&
+        !(extension.endsWith('.jpg') || extension.endsWith('.jpeg') ||
+          extension.endsWith('.png') || extension.endsWith('.webp'))) {
+      throw ArgumentError('Format photo non pris en charge. Utilisez JPG, PNG ou WebP.');
+    }
+    if (mediaType == 'video' &&
+        !(extension.endsWith('.mp4') || extension.endsWith('.mov'))) {
+      throw ArgumentError('Format vidéo non pris en charge. Utilisez MP4 ou MOV.');
+    }
     final contentType = mediaType == 'image'
         ? (extension.endsWith('.png')
             ? 'image/png'

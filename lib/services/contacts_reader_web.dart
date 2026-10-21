@@ -12,7 +12,7 @@ external JSPromise<JSArray<JSObject>> _selectBrowserContacts(
 @JS()
 @anonymous
 extension type _ContactPickerOptions._(JSObject _) implements JSObject {
-  external factory _ContactPickerOptions({bool multiple});
+  external factory _ContactPickerOptions({bool? multiple});
 }
 
 @JS()

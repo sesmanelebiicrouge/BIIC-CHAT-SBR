@@ -127,6 +127,7 @@ class AuthService {
 
   Future<AuthResponse> signUp({
     required String phone,
+    required String email,
     required String password,
     required String displayName,
   }) async {
@@ -135,7 +136,10 @@ class AuthService {
         phone: phone.trim(),
         password: password,
         channel: OtpChannel.sms,
-        data: {'display_name': displayName.trim()},
+        data: {
+          'display_name': displayName.trim(),
+          'registration_email': email.trim().toLowerCase(),
+        },
       );
 
       if (response.user == null) {

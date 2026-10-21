@@ -389,4 +389,3 @@ class _StatusPageState extends State<StatusPage> {
   String get _serviceUserId =>
       Supabase.instance.client.auth.currentUser?.id ?? '';
 }
-}

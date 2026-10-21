@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/conversation_service.dart';
 import '../services/media_service.dart';
+import '../services/device_permissions_service.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -17,6 +18,7 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final _service = ConversationService();
   final _media = MediaService();
+  final _devicePermissions = DevicePermissionsService();
   final _controller = TextEditingController();
   bool _sending = false;
   bool _uploading = false;
@@ -74,6 +76,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      try {
+        await _devicePermissions.requestCamera();
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        return;
+      }
+    }
     final file = await ImagePicker().pickImage(source: source, maxWidth: 1920, maxHeight: 1920, imageQuality: 88);
     if (file == null) return;
     await _upload(file.name, await file.readAsBytes(), file.mimeType ?? 'image/jpeg');

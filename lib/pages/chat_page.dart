@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/conversation_service.dart';
 import '../services/media_service.dart';
+import '../services/device_permissions_service.dart';
+import '../services/location_share_service.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -17,6 +19,8 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final _service = ConversationService();
   final _media = MediaService();
+  final _devicePermissions = DevicePermissionsService();
+  final _locationShare = LocationShareService();
   final _controller = TextEditingController();
   bool _sending = false;
   bool _uploading = false;
@@ -74,6 +78,14 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      try {
+        await _devicePermissions.requestCamera();
+      } catch (e) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        return;
+      }
+    }
     final file = await ImagePicker().pickImage(source: source, maxWidth: 1920, maxHeight: 1920, imageQuality: 88);
     if (file == null) return;
     await _upload(file.name, await file.readAsBytes(), file.mimeType ?? 'image/jpeg');
@@ -141,6 +153,28 @@ class _ChatPageState extends State<ChatPage> {
       content: 'Contact : ' + name + (phone.isEmpty ? '' : ' • ' + phone),
     );
   }
+  Future<void> _shareLocation() async {
+    final user = _service.client.auth.currentUser;
+    if (user == null || _sending || _uploading) return;
+    setState(() => _sending = true);
+    try {
+      final message = await _locationShare.createLocationMessage();
+      await _service.sendMessage(
+        conversationId: widget.conversationId,
+        senderId: user.id,
+        content: message,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Position non partagée : $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
   Future<void> _pickFile() async {
     final files = await FilePicker.pickFiles();
     if (files.isEmpty) return;
@@ -196,6 +230,7 @@ class _ChatPageState extends State<ChatPage> {
       ListTile(leading: const Icon(Icons.photo_camera), title: const Text('Appareil photo'), onTap: () { Navigator.pop(context); _pickImage(ImageSource.camera); }),
       ListTile(leading: const Icon(Icons.attach_file), title: const Text('Fichier / document'), onTap: () { Navigator.pop(context); _pickFile(); }),
       ListTile(leading: const Icon(Icons.contacts_outlined), title: const Text('Partager un contact'), onTap: () { Navigator.pop(context); _shareContact(); }),
+      ListTile(leading: const Icon(Icons.location_on_outlined), title: const Text('Partager ma position'), subtitle: const Text('Une position ponctuelle, uniquement après autorisation'), onTap: () { Navigator.pop(context); _shareLocation(); }),
     ])));
   }
   Future<String> _signed(String path) => _media.createSignedUrl(path);

@@ -13,8 +13,10 @@ Le code de l’application prend désormais en charge l’inscription et la conn
    `Votre code de confirmation BIIC CHAT est : {{ .Token }}`
 
    L’écran de l’application attend un code à 6 chiffres et le valide avec Supabase Auth. Un modèle qui n’envoie qu’un lien de confirmation ne correspond pas à cet écran.
-6. Dans **Authentication → URL Configuration**, vérifier que l’URL publique de BIIC CHAT est enregistrée comme Site URL et que les Redirect URLs correspondent aux URL utilisées par l’application.
-7. Tester avec une adresse e-mail réelle à laquelle vous avez accès : inscription, réception du code, validation, déconnexion puis reconnexion.
+6. Dans **Authentication → Email Templates → Reset Password**, configurer également le modèle de récupération pour afficher `{{ .Token }}` si l’application doit recevoir un code à six chiffres. Le modèle de récupération est distinct du modèle de confirmation.
+7. Vérifier la configuration SMTP et les limites d’envoi d’e-mails dans Supabase. En cas de refus, consulter **Authentication → Logs** et conserver le code/message d’erreur technique sans publier d’adresse e-mail personnelle ni de jeton.
+8. Dans **Authentication → URL Configuration**, vérifier que l’URL publique de BIIC CHAT est enregistrée comme Site URL et que les Redirect URLs correspondent aux URL utilisées par l’application.
+9. Tester avec une adresse e-mail réelle à laquelle vous avez accès : inscription, réception du code, validation, déconnexion puis reconnexion, puis récupération du mot de passe par code.
 
 ## Sécurité et limites
 

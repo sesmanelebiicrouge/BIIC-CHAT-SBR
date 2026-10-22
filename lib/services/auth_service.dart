@@ -93,6 +93,42 @@ class AuthService {
     }
   }
 
+  Future<void> requestPasswordResetEmail(String email) async {
+    try {
+      await _client.auth.resetPasswordForEmail(email.trim().toLowerCase());
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (_) {
+      throw const AuthServiceException(
+        'Impossible d’envoyer le code de récupération par e-mail. Réessayez.',
+        'email_reset_request_error',
+      );
+    }
+  }
+
+  Future<void> resendPasswordResetEmailCode(String email) =>
+      requestPasswordResetEmail(email);
+
+  Future<AuthResponse> verifyPasswordResetEmailCode({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      return await _client.auth.verifyOTP(
+        type: OtpType.recovery,
+        email: email.trim().toLowerCase(),
+        token: token.trim(),
+      );
+    } on AuthException catch (e) {
+      throw AuthServiceException.fromAuthException(e);
+    } catch (_) {
+      throw const AuthServiceException(
+        'Vérification du code de récupération par e-mail impossible. Vérifiez le code puis réessayez.',
+        'email_reset_verify_error',
+      );
+    }
+  }
+
   Future<void> signInAnonymously() async {
     try {
       await _client.auth.signInAnonymously();
@@ -357,6 +393,41 @@ class AuthServiceException implements Exception {
   factory AuthServiceException.fromAuthException(AuthException e) {
     final code = (e.code ?? '').toLowerCase();
     final raw = e.message.toLowerCase();
+
+    if (code.contains('email') && (raw.contains('rate') || raw.contains('too many'))) {
+      return const AuthServiceException(
+        'Trop de demandes par e-mail. Attendez quelques instants avant de réessayer.',
+        'email_rate_limit',
+      );
+    }
+
+    if (code.contains('email_provider_disabled') ||
+        raw.contains('email signups are disabled') ||
+        raw.contains('email provider is disabled')) {
+      return const AuthServiceException(
+        'Les inscriptions par e-mail sont désactivées dans Supabase. Activez le fournisseur Email dans Authentication → Sign In / Providers.',
+        'email_provider_disabled',
+      );
+    }
+
+    if (raw.contains('error sending confirmation email') ||
+        raw.contains('error sending recovery email') ||
+        raw.contains('smtp') ||
+        raw.contains('email provider')) {
+      return const AuthServiceException(
+        'Supabase n’a pas pu envoyer l’e-mail. Vérifiez le SMTP et le modèle d’e-mail dans Authentication, puis consultez les journaux Auth.',
+        'email_delivery_error',
+      );
+    }
+
+    if (raw.contains('user already registered') ||
+        raw.contains('email address already exists') ||
+        code.contains('user_already_exists')) {
+      return const AuthServiceException(
+        'Cette adresse e-mail est déjà associée à un compte. Connectez-vous ou récupérez votre mot de passe.',
+        'email_already_registered',
+      );
+    }
 
     if (code == 'phone_provider_disabled' ||
         raw.contains('phone signups are disabled')) {

@@ -1,0 +1,93 @@
+name: Production health check and safe web rollback
+
+on:
+  workflow_run:
+    workflows: ["Deploy BIIC CHAT Web to GitHub Pages"]
+    types: [completed]
+  schedule:
+    - cron: "17,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biic-chat-production-health
+  cancel-in-progress: false
+
+jobs:
+  check:
+    # Only react to successful main-branch production deployments, scheduled checks,
+    # or a manually requested health check.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check public web app with retries
+        id: health
+        shell: bash
+        run: |
+          set +e
+          for attempt in 1 2 3 4 5 6; do
+            code=$(curl --connect-timeout 10 --max-time 25 -sS -o /tmp/biic-home.html -w "%{http_code}" \
+              "https://sesmanelebiicrouge.github.io/BIIC-CHAT-SBR/")
+            if [ "$code" = "200" ] && grep -qi "BIIC CHAT\|flutter" /tmp/biic-home.html; then
+              echo "Public web page returned HTTP 200 (attempt $attempt)."
+              echo "healthy=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning::Public page health check attempt $attempt failed (HTTP ${code:-unknown})."
+            sleep 15
+          done
+          echo "healthy=false" >> "$GITHUB_OUTPUT"
+          echo "::error::The public web page did not pass its health check after retries."
+          exit 1
+
+  rollback:
+    name: Roll back the last web deployment if the site is unhealthy
+    needs: check
+    if: failure() && needs.check.result == 'failure' && github.event_name != 'pull_request'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout deployment history
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 2
+          persist-credentials: true
+
+      - name: Verify rollback target and restore previous published version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha || '' }}
+        run: |
+          set -euo pipefail
+          current_subject="$(git log -1 --format=%s)"
+          current_sha="$(git rev-parse HEAD)"
+          previous_sha="$(git rev-parse HEAD^ 2>/dev/null || true)"
+
+          if [ -z "$previous_sha" ]; then
+            echo "::error::No previous published commit exists; refusing an unsafe rollback."
+            exit 1
+          fi
+
+          # For a deployment-triggered check, only roll back if the current gh-pages
+          # commit is the deployment that just completed. This prevents undoing a newer release.
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            short_sha="${DEPLOY_SHA:0:7}"
+            if [ -z "$short_sha" ] || [[ "$current_subject" != *"$short_sha"* ]]; then
+              echo "::error::The latest published commit does not match the failed deployment. Refusing to roll back a newer release."
+              exit 1
+            fi
+          fi
+
+          echo "Rolling back published branch from $current_sha to $previous_sha."
+          git reset --hard "$previous_sha"
+          git push origin HEAD:gh-pages --force-with-lease=refs/heads/gh-pages:"$current_sha"
+          echo "::notice::Previous GitHub Pages version restored. Re-run health checks after propagation."

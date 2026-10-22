@@ -50,14 +50,37 @@ class _AuthPageState extends State<AuthPage> {
     final phone=_normalizePhone(_phone.text);
     final emailMode=_useEmail && (_mode==_AuthMode.signIn || _mode==_AuthMode.register);
     if(_mode==_AuthMode.forgotPassword){
-      if(!_isValidIvorianPhone(phone)){_message('Entrez un numéro ivoirien valide, par exemple 07 00 00 00 00.');return;}
+      if (_useEmail) {
+        if (!RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(email)) {
+          _message('Entrez une adresse e-mail valide.');
+          return;
+        }
+      } else if (!_isValidIvorianPhone(phone)) {
+        _message('Entrez un numéro ivoirien valide, par exemple 07 00 00 00 00.');
+        return;
+      }
       setState(()=>_loading=true);
-      try{await _auth.requestPasswordReset(phone);_pendingPhone=phone;_otp.clear();setState(()=>_mode=_AuthMode.verifyReset);_message('Le code de validation a été envoyé par SMS.');}
-      catch(e){_message(AuthService.readableError(e));}
-      finally{if(mounted)setState(()=>_loading=false);}
+      try {
+        if (_useEmail) {
+          await _auth.requestPasswordResetEmail(email);
+          _pendingEmail = email;
+          _pendingPhone = '';
+        } else {
+          await _auth.requestPasswordReset(phone);
+          _pendingPhone = phone;
+          _pendingEmail = '';
+        }
+        _otp.clear();
+        setState(()=>_mode=_AuthMode.verifyReset);
+        _message(_useEmail ? 'Le code de récupération a été envoyé par e-mail.' : 'Le code de récupération a été envoyé par SMS.');
+      } catch(e) {
+        _message(AuthService.readableError(e));
+      } finally {
+        if(mounted)setState(()=>_loading=false);
+      }
       return;
     }
-    if(emailMode && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)){_message('Entrez une adresse e-mail valide.');return;}
+    if(emailMode && !RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(email)){_message('Entrez une adresse e-mail valide.');return;}
     if(!emailMode&&!_isValidIvorianPhone(phone)){_message('Entrez un numéro ivoirien valide, par exemple 07 00 00 00 00.');return;}
     if(_password.text.length<6){_message('Le mot de passe doit contenir au moins 6 caractères.');return;}
     if(_isRegister&&_password.text!=_confirmPassword.text){_message('Les deux mots de passe ne correspondent pas.');return;}
@@ -95,7 +118,9 @@ class _AuthPageState extends State<AuthPage> {
     if(!RegExp(r'^\d{6}$').hasMatch(code)){_message(_pendingEmail.isNotEmpty?'Entrez le code reçu par e-mail à 6 chiffres.':'Entrez le code SMS à 6 chiffres.');return;}
     setState(()=>_loading=true);
     try{
-      if (_mode == _AuthMode.verifyReset) {
+      if (_mode == _AuthMode.verifyReset && _pendingEmail.isNotEmpty) {
+        await _auth.verifyPasswordResetEmailCode(email: _pendingEmail, token: code);
+      } else if (_mode == _AuthMode.verifyReset) {
         await _auth.verifyPasswordResetCode(phone: _pendingPhone, token: code);
       } else if (_pendingEmail.isNotEmpty) {
         await _auth.verifyEmailSignupCode(email: _pendingEmail, token: code);
@@ -120,7 +145,9 @@ class _AuthPageState extends State<AuthPage> {
     if(_pendingPhone.isEmpty && _pendingEmail.isEmpty)return;
     setState(()=>_loading=true);
     try{
-      if(_mode==_AuthMode.verifyReset){
+      if(_mode==_AuthMode.verifyReset && _pendingEmail.isNotEmpty){
+        await _auth.resendPasswordResetEmailCode(_pendingEmail);
+      }else if(_mode==_AuthMode.verifyReset){
         await _auth.resendPasswordResetCode(_pendingPhone);
       }else if(_pendingEmail.isNotEmpty){
         await _auth.resendEmailSignupCode(_pendingEmail);
@@ -140,6 +167,7 @@ class _AuthPageState extends State<AuthPage> {
   String get _subtitle{
     if(_isVerify)return _pendingEmail.isNotEmpty?'Entrez le code de confirmation reçu par e-mail.':'Entrez le code à 6 chiffres reçu par SMS.';
     if(_mode==_AuthMode.setNewPassword)return 'Choisissez un nouveau mot de passe pour votre compte.';
+    if(_mode==_AuthMode.forgotPassword) return _useEmail ? 'Recevez un code de récupération sur votre adresse e-mail.' : 'Recevez un code de récupération par SMS.';
     return _isRegister?(_useEmail?'Créez votre compte BIIC CHAT avec votre adresse e-mail.':'Créez votre compte BIIC CHAT avec votre numéro de téléphone.') :(_useEmail?'Connectez-vous avec votre adresse e-mail et votre mot de passe.':'Connectez-vous avec votre numéro et votre mot de passe.');
   }
   InputDecoration _decoration(String label,IconData icon)=>InputDecoration(labelText:label,prefixIcon:Icon(icon));
@@ -178,7 +206,7 @@ class _AuthPageState extends State<AuthPage> {
         const SizedBox(height: 12),
         TextField(controller: _confirmPassword, obscureText: true, decoration: _decoration('Confirmer le mot de passe', Icons.lock_reset_outlined)),
       ] else ...[
-        if (_mode == _AuthMode.signIn || _mode == _AuthMode.register) ...[
+        if (_mode == _AuthMode.signIn || _mode == _AuthMode.register || _mode == _AuthMode.forgotPassword) ...[
           SegmentedButton<bool>(
             segments: const [
               ButtonSegment<bool>(value: false, label: Text('Téléphone'), icon: Icon(Icons.phone_outlined)),
@@ -198,12 +226,12 @@ class _AuthPageState extends State<AuthPage> {
         ],
         TextField(
           controller: _phone,
-          keyboardType: _useEmail && _mode != _AuthMode.forgotPassword ? TextInputType.emailAddress : TextInputType.phone,
+          keyboardType: _useEmail ? TextInputType.emailAddress : TextInputType.phone,
           autocorrect: false,
-          autofillHints: _useEmail && _mode != _AuthMode.forgotPassword
+          autofillHints: _useEmail
               ? const [AutofillHints.email]
               : const [AutofillHints.telephoneNumber],
-          decoration: _useEmail && _mode != _AuthMode.forgotPassword
+          decoration: _useEmail
               ? _decoration('Adresse e-mail', Icons.email_outlined).copyWith(hintText: 'vous@exemple.com')
               : _decoration('Numéro de téléphone', Icons.phone_outlined).copyWith(hintText: '+225 07 00 00 00 00'),
         ),

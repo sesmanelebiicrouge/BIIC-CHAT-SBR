@@ -51,7 +51,7 @@ class _AuthPageState extends State<AuthPage> {
     final emailMode=_useEmail && (_mode==_AuthMode.signIn || _mode==_AuthMode.register);
     if(_mode==_AuthMode.forgotPassword){
       if (_useEmail) {
-        if (!RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(email)) {
+        if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
           _message('Entrez une adresse e-mail valide.');
           return;
         }
@@ -80,7 +80,7 @@ class _AuthPageState extends State<AuthPage> {
       }
       return;
     }
-    if(emailMode && !RegExp(r'^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$').hasMatch(email)){_message('Entrez une adresse e-mail valide.');return;}
+    if(emailMode && !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)){_message('Entrez une adresse e-mail valide.');return;}
     if(!emailMode&&!_isValidIvorianPhone(phone)){_message('Entrez un numéro ivoirien valide, par exemple 07 00 00 00 00.');return;}
     if(_password.text.length<6){_message('Le mot de passe doit contenir au moins 6 caractères.');return;}
     if(_isRegister&&_password.text!=_confirmPassword.text){_message('Les deux mots de passe ne correspondent pas.');return;}

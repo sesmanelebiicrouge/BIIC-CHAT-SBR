@@ -14,6 +14,11 @@ BIIC CHAT est une application Flutter de messagerie multiplateforme, conçue pou
 - médias stockés dans des buckets privés ;
 - aucune clé secrète de service Supabase dans l'application.
 
+### Appels audio/vidéo — état actuel
+- les boutons ouvrent une salle Jitsi dans un navigateur ou une application externe ;
+- la discussion et les participants sont vérifiés avant l'ouverture ;
+- les appels entrants avec sonnerie, acceptation/refus et média WebRTC intégré ne sont pas encore implémentés. Cette fonction ne doit donc pas être présentée comme un appel intégré complet.
+
 ### Messagerie
 - liste des conversations ;
 - recherche de membres ;
@@ -77,7 +82,7 @@ Fichiers actuellement présents :
 - `20261021140100_phone_directory_lookup.sql`
 - `20261021141500_registration_email_for_phone_accounts.sql`
 
-Les migrations horodatées ci-dessus sont en cours d’ajout dans la branche de fonctionnalité. Ne renommez pas les anciennes migrations et ne relancez pas leurs SQL à l'aveugle sur la base de production : il faut d'abord vérifier l'historique réel des migrations dans Supabase et préparer une migration de réconciliation compatible avec cet historique. L'accès Supabase n'étant pas disponible via la connexion actuelle, cette vérification distante n'a pas pu être effectuée pendant la préparation de la version 1.0.2.
+L'historique Supabase distant a été vérifié le 21 octobre 2026 et contient des migrations horodatées jusqu'à `20261021182947`. Les noms et versions historiques locaux ne correspondent pas exactement à cet historique, et plusieurs fichiers legacy partagent les préfixes `013`, `014`, `015` et `016`. Ne renommez pas les anciennes migrations et ne relancez pas leur SQL à l'aveugle sur la base de production : comparez d'abord chaque migration locale à l'historique distant, puis préparez une réconciliation non destructive avant d'utiliser `supabase db push`. Le détail des constats et actions est dans [`docs/PROJECT_HEALTH_AUDIT.md`](docs/PROJECT_HEALTH_AUDIT.md).
 
 Le script `supabase/manual/BIIC_CHAT_REPAIR_013_016.sql` est un correctif manuel ciblé, pas un remplacement complet de toutes les migrations. Faites une sauvegarde et comparez son contenu à l'état réel de la base avant exécution. Après toute migration, vérifiez que Realtime est activé pour les tables utilisées et que les buckets `chat-media` et `avatars` restent privés.
 

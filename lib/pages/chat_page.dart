@@ -384,6 +384,13 @@ class _ChatPageState extends State<ChatPage> {
     final room = 'biic-chat-${widget.conversationId}'.replaceAll(RegExp(r'[^a-zA-Z0-9-]'), '-');
     final uri = Uri.parse('https://meet.jit.si/$room');
     try {
+      // Validate on the server-backed data before opening the external provider.
+      // In particular, do not launch a group room that the call-history RLS
+      // policy will reject, or allow a blocked contact to be called.
+      await CallHistoryService().validateOutgoingCall(
+        conversationId: widget.conversationId,
+        callType: callType,
+      );
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
       if (!opened) {
         if (mounted) {

@@ -8,21 +8,25 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Pull requests must never receive a write-capable token while executing branch code.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: biic-chat-pages
+  group: biic-chat-pages-${{ github.event.pull_request.head.sha || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build-and-verify:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -277,8 +281,28 @@ jobs:
           grep -q 'biic_logo_192.png?v=' build/web/index.html
           grep -q 'alternateName' build/web/index.html
 
+      - name: Upload verified Web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: biic-chat-web
+          path: ./build/web
+          if-no-files-found: error
+          retention-days: 2
+
+  deploy:
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    needs: build-and-verify
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download verified Web build
+        uses: actions/download-artifact@v4
+        with:
+          name: biic-chat-web
+          path: ./build/web
+
       - name: Publish gh-pages branch
-        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

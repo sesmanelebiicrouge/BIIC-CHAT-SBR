@@ -1,0 +1,78 @@
+name: Android build and distribution readiness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: biic-android-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  android-debug-check:
+    name: Build Android test APK
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android platform files
+        run: flutter create --platforms=android --org com.biicchat --project-name biic_chat_sbr .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Dart sources
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run tests
+        run: |
+          flutter test \
+            --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB
+
+      - name: Build Android debug APK
+        run: |
+          for attempt in 1 2 3; do
+            if flutter build apk --debug \
+              --dart-define=SUPABASE_URL=https://ktiawqonbjhzzghksngr.supabase.co \
+              --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_Fc0Ekq2igdnN-_dxIcDijQ_M0evXXoB; then
+              test -s build/app/outputs/flutter-apk/app-debug.apk
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              echo "::warning::Android build attempt $attempt failed; retrying."
+              sleep $((attempt * 15))
+            fi
+          done
+          echo "::error::Android debug APK build failed after 3 attempts."
+          exit 1
+
+      - name: Upload Android test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: biic-chat-android-debug-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Explain production Android publishing requirements
+        if: always()
+        run: |
+          echo "A debug APK is a CI/test artifact, not a production auto-update."
+          echo "Public Android releases require a stable signing keystore and a configured distribution channel (Google Play or signed APK release)."
+          echo "Never generate a new signing key for every release; that would prevent in-place updates.";

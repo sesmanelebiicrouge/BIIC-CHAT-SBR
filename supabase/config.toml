@@ -1,9 +1,13 @@
 # Supabase local and deployment configuration for BIIC CHAT.
-# The Send SMS Auth Hook is authenticated by Standard Webhooks signatures,
-# not by a Supabase user JWT. The function verifies that signature itself.
+# Auth hooks are authenticated by Standard Webhooks signatures, not user JWTs.
+# Each hook verifies its own signature before processing the payload.
+
 [functions.send-sms]
 verify_jwt = false
 
-# User-facing email OTP flow; this function verifies the caller's JWT itself as well.
+[functions.send-email]
+verify_jwt = false
+
+# User-facing phone-registration flow verifies the caller's JWT itself.
 [functions.phone-registration]
 verify_jwt = true

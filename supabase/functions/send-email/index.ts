@@ -216,9 +216,11 @@ Deno.serve(async (req) => {
 
     const otpTemplate = OTP_TEMPLATES[action];
     if (otpTemplate) {
-      if (!validEmail(email)) throw new Error("Auth hook did not provide a valid destination email.");
+      // When linking an email to an anonymous account, Supabase may leave user.email empty.
+      const destination = action === "email" && validEmail(newEmail) ? newEmail : email;
+      if (!validEmail(destination)) throw new Error("Auth hook did not provide a valid destination email.");
       if (!validOtp(emailData.token)) throw new Error("Auth hook did not provide a six-digit email OTP.");
-      await sendEmail(email, otpTemplate, emailData.token);
+      await sendEmail(destination, otpTemplate, emailData.token);
       return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
     }
 

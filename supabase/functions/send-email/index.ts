@@ -92,7 +92,7 @@ const NOTIFICATION_TEMPLATES: Record<string, EmailTemplate> = {
 
 function required(name: string): string {
   const value = Deno.env.get(name)?.trim();
-  if (!value) throw new Error(\`Missing server secret: \${name}\`);
+  if (!value) throw new Error(`Missing server secret: ${name}`);
   return value;
 }
 
@@ -134,26 +134,26 @@ async function sendEmail(to: string, template: EmailTemplate, token?: string): P
   const from = required("BIIC_CHAT_FROM_EMAIL");
   const safeToken = token ? escapeHtml(token.trim()) : "";
   const tokenHtml = token
-    ? \`<p style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;padding:18px;background:#f8f8f8;border-radius:10px">\${safeToken}</p>\`
+    ? `<p style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center;padding:18px;background:#f8f8f8;border-radius:10px">${safeToken}</p>`
     : "";
-  const tokenText = token ? \`\\n\\nVotre code : \${token.trim()}\` : "";
-  const html = \`<!doctype html>
+  const tokenText = token ? `\n\nVotre code : ${token.trim()}` : "";
+  const html = `<!doctype html>
 <html lang="fr"><body style="margin:0;background:#f5f5f5;font-family:Arial,sans-serif;color:#222">
   <div style="max-width:520px;margin:32px auto;padding:28px;background:#fff;border-radius:16px">
     <h2 style="margin-top:0;color:#d71920">BIIC CHAT</h2>
-    <h3>\${escapeHtml(template.heading)}</h3>
-    <p>\${escapeHtml(template.description)}</p>
-    \${tokenHtml}
-    \${token ? "<p>Ce code est temporaire. Ne le partagez avec personne.</p>" : ""}
+    <h3>${escapeHtml(template.heading)}</h3>
+    <p>${escapeHtml(template.description)}</p>
+    ${tokenHtml}
+    ${token ? "<p>Ce code est temporaire. Ne le partagez avec personne.</p>" : ""}
     <p style="font-size:12px;color:#777">Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail.</p>
   </div>
-</body></html>\`;
-  const text = \`BIIC CHAT — \${template.heading}\\n\\n\${template.description}\${tokenText}\\n\\nNe partagez jamais votre code de vérification.\`;
+</body></html>`;
+  const text = `BIIC CHAT — ${template.heading}\n\n${template.description}${tokenText}\n\nNe partagez jamais votre code de vérification.`;
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: \`Bearer \${apiKey}\`,
+      Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       Accept: "application/json",
     },
@@ -163,7 +163,7 @@ async function sendEmail(to: string, template: EmailTemplate, token?: string): P
   if (!response.ok) {
     const details = await response.text();
     console.error("Resend delivery failed", response.status, details.slice(0, 500));
-    throw new Error(\`Email provider rejected the message (HTTP \${response.status}).\`);
+    throw new Error(`Email provider rejected the message (HTTP ${response.status}).`);
   }
 }
 
@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
       return new Response("{}", { status: 200, headers: { "Content-Type": "application/json" } });
     }
 
-    throw new Error(\`Unsupported email action: \${action}\`);
+    throw new Error(`Unsupported email action: ${action}`);
   } catch (error) {
     console.error("BIIC CHAT Send Email hook error:", error);
     return new Response(JSON.stringify({ error: "Unable to send authentication email." }), {
